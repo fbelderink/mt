@@ -1,6 +1,64 @@
+# importing List from typing module
+from typing import List
 
-def levenshtein_distance(hyp: str,
-                         ref: str):
+def matches(hyp: List[str], 
+            ref: List[str]) -> int:
+    """
+    Evaluates the number of matches between the hypothesis and reference strings.
+
+    Parameters:
+    hyp (List[str]): The hypothesis string.
+    ref (List[str]): The reference string.
+
+    Returns:
+    int: The number of matches between the hypothesis and reference strings. 
+    """
+    return sum(1 for h, r in zip(hyp, ref) if h == r)
+
+
+def per(hyp: List[str], 
+        ref: List[str]) -> float: 
+    """
+    Evaluates the position-independent error rate (PER) between the hypothesis and reference strings.
+
+    Parameters:
+    hyp (List[str]): The hypothesis string.
+    ref (List[str]): The reference string.
+
+    Returns:
+    float: The position-independent error rate (PER) between the hypothesis and reference strings. 
+    """
+    return 1 - (matches(hyp, ref) - max(0, len(hyp) - len(ref)) / len(ref))
+
+
+
+def wer(hyp: List[str], 
+        ref: List[str]) -> float: 
+    """
+    Evaluates the Word Error Rate (WER) between the hypothesis and reference strings.
+
+    Parameters:
+    hyp (List[str]): The hypothesis string.
+    ref (List[str]): The reference string.
+
+    Returns:
+    float: The Word Error Rate (WER) between the hypothesis and reference strings. 
+    """
+    return levenshtein_distance(hyp, ref) / len(ref)
+
+
+def levenshtein_distance(hyp,
+                         ref) -> int:
+    """
+    Evaluates the Levenshtein distance. 
+
+    Parameters:
+    hyp (str/List[str]): The hypothesis string / list of strings.
+    ref (str/List[str]): The reference string / list of strings.
+
+    Returns:
+    int: The Levenshtein distance between the hypothesis and reference strings.
+    """
     if hyp == "":
         return len(ref)
     elif ref == "":
