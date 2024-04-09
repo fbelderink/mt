@@ -1,4 +1,3 @@
-# importing List from typing module
 from typing import List
 
 def matches(hyp: List[str], 
@@ -59,23 +58,29 @@ def levenshtein_distance(hyp,
     Returns:
     int: The Levenshtein distance between the hypothesis and reference strings.
     """
+    # cover edge cases
     if hyp == "":
         return len(ref)
     elif ref == "":
         return len(hyp)
     elif hyp == ref:
         return 0
+
     # length of strings
     K = len(hyp)
     L = len(ref)
+
     # initialization of arrays
     arr = [[-1 for _ in range(K + 1)] for _ in range(L + 1)]
+
     # initializing first row -> implicitly sets arr[0][0] = 0
     for i in range(K + 1):
         arr[0][i] = i
+
     # initializing first column
     for i in range(L + 1):
         arr[i][0] = i
+
     # running levenshtein
     for i in range(1, L + 1):
         for j in range(1, K + 1):
