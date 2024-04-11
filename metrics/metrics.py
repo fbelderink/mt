@@ -67,7 +67,7 @@ def per(hyp: List[str],
     Returns:
     float: The position-independent error rate (PER) between the hypothesis and reference strings. 
     """
-    return 1 - (_matches(hyp, ref) - max(0, len(hyp) - len(ref)) / len(ref))
+    return 1 - ((_matches(hyp, ref) - max(0, len(hyp) - len(ref))) / len(ref))
 
 
 def wer(hyp: List[str], 
