@@ -10,6 +10,8 @@ def _n_grams(input_str: List[str],
     input (List[str]): The input list of strings to generate n-grams from.
     n (int): The n-gram size.
     """
+    if n <= 0:
+        raise ValueError("n must be greater than 0.")
     return [input_str[i:i + n] for i in range(len(input_str) - n + 1)]
 
 
@@ -80,6 +82,10 @@ def wer(hyp: List[str],
     Returns:
     float: The Word Error Rate (WER) between the hypothesis and reference strings. 
     """
+    if len(hyp) == 0:
+        return len(ref) # as many insertions as there are words in the reference
+    elif len(ref) == 0:
+        return len(hyp) # as many deletions as there are words in the hypothesis
     return levenshtein_distance(hyp, ref) / len(ref)
 
 
