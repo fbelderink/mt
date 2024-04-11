@@ -41,7 +41,7 @@ def bleu(hyp: List[str],
 
 
 def _matches(hyp: List[str], 
-            ref: List[str]) -> int:
+             ref: List[str]) -> int:
     """
     Evaluates the number of matches between the hypothesis and reference strings.
 
@@ -52,7 +52,7 @@ def _matches(hyp: List[str],
     Returns:
     int: The number of matches between the hypothesis and reference strings. 
     """
-    return sum(1 for h, r in zip(hyp, ref) if h == r)
+    return sum(1 for word in hyp if word in ref)
 
 
 def per(hyp: List[str], 
