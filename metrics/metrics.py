@@ -6,12 +6,17 @@ import warnings
 class Metric:
 
     @abstractmethod
-    def __call__(self, hyp: list, ref: list):
+    def __call__(self,
+                 hyp: list,
+                 ref: list):
         ...
 
 
 class WER(Metric):
-    def __call__(self, hyp: list, ref: list, on_corpus=False) -> float:
+    def __call__(self,
+                 hyp: list,
+                 ref: list,
+                 on_corpus: bool = False) -> float:
         """
         Evaluates the Word Error Rate (WER) between the hypothesis and reference strings.
 
@@ -28,7 +33,10 @@ class WER(Metric):
 
         return self.levenshtein(hyp, ref) / len(ref)
 
-    def levenshtein(self, hyp: list, ref: list, verbose=False) -> int:
+    def levenshtein(self,
+                    hyp: list,
+                    ref: list,
+                    verbose: bool = False) -> int:
         """
         Evaluates the Levenshtein distance.
 
@@ -80,7 +88,10 @@ class WER(Metric):
 
         return mat[J][K]
 
-    def _print_levenshtein_edits(self, hyp: list, ref: list, traceback):
+    def _print_levenshtein_edits(self,
+                                 hyp: list,
+                                 ref: list,
+                                 traceback):
         idx_ref = idx_hyp = 0
         for c in traceback:
             match c:
@@ -99,7 +110,10 @@ class WER(Metric):
                     print(f"insert {ref[idx_ref]}")
                     idx_ref += 1
 
-    def _traceback_levenshtein(self, mat, j, k):
+    def _traceback_levenshtein(self,
+                               mat,
+                               j: int,
+                               k: int):
         if j == 0:
             return "i" * k  # if k is not 0, we have k insertion steps (←) to get to (0, 0)
 
@@ -121,7 +135,10 @@ class WER(Metric):
 
 
 class PER(Metric):
-    def __call__(self, hyp: list, ref: list, on_corpus=False) -> float:
+    def __call__(self,
+                 hyp: list,
+                 ref: list,
+                 on_corpus: bool = False) -> float:
         """
         Evaluates the position-independent error rate (PER) between the hypothesis and reference strings.
 
@@ -139,7 +156,9 @@ class PER(Metric):
 
         return 1 - ((self._matches(hyp, ref) - max(0, len(hyp) - len(ref))) / len(ref))
 
-    def _matches(self, hyp: list, ref: list) -> int:
+    def _matches(self,
+                 hyp: list,
+                 ref: list) -> int:
         """
         Evaluates the number of matches between the hypothesis and reference strings.
 
@@ -155,7 +174,10 @@ class PER(Metric):
 
 class BLEU(Metric):
 
-    def __call__(self, hyps: list, refs: list, N=4) -> float:
+    def __call__(self,
+                 hyps: list,
+                 refs: list,
+                 N: int = 4) -> float:
         # calculate modified n-gram precision up to N
         n_gram_precisions = [self._modified_n_gram_precision(hyps, refs, n) for n in range(1, N + 1)]
 
@@ -171,7 +193,10 @@ class BLEU(Metric):
 
         return bp * np.exp((1 / N) * modified_precision_sum)
 
-    def _modified_n_gram_precision(self, hyps: list, refs: list, n: int) -> float:
+    def _modified_n_gram_precision(self,
+                                   hyps: list,
+                                   refs: list,
+                                   n: int) -> float:
         numerator, denominator = 0, 0
 
         for (hyp, ref) in zip(hyps, refs):  # for all L (hyp, ref) pairs
@@ -185,7 +210,9 @@ class BLEU(Metric):
 
         return numerator / denominator
 
-    def _brevity_penalty(self, hyp: list, ref: list) -> float:
+    def _brevity_penalty(self,
+                         hyp: list,
+                         ref: list) -> float:
 
         # calculate accumulated length of hypotheses and references
         l_h, l_r = sum([len(h) for h in hyp]), sum([len(r) for r in ref])
