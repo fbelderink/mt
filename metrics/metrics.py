@@ -136,6 +136,9 @@ class WER(Metric):
 
 
 class PER(Metric):
+    """
+    Position-independent error rate (PER) metric.
+    """
     def __call__(self,
                  hyp: list,
                  ref: list,
