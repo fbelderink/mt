@@ -23,6 +23,7 @@ class WER(Metric):
         Parameters:
         hyp (list): The hypothesis string.
         ref (list): The reference string.
+        on_corpus (bool): Whether to evaluate the WER on a corpus.
 
         Returns:
         float: The Word Error Rate (WER) between the hypothesis and reference strings.
