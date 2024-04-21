@@ -1,21 +1,22 @@
 from abc import abstractmethod
 import numpy as np
 import warnings
+from typing import List, Union
 
 
 class Metric:
 
     @abstractmethod
     def __call__(self,
-                 hyp: list,
-                 ref: list):
+                 hyp: List[str],
+                 ref: List[str]):
         ...
 
 
 class WER(Metric):
     def __call__(self,
-                 hyp: list,
-                 ref: list,
+                 hyp: List[str],
+                 ref: List[str],
                  on_corpus: bool = False) -> float:
         """
         Evaluates the Word Error Rate (WER) between the hypothesis and reference strings.
@@ -35,8 +36,8 @@ class WER(Metric):
         return self.levenshtein(hyp, ref) / len(ref)
 
     def levenshtein(self,
-                    hyp: list,
-                    ref: list,
+                    hyp: List[str],
+                    ref: List[str],
                     verbose: bool = False) -> int:
         """
         Evaluates the Levenshtein distance.
@@ -90,9 +91,9 @@ class WER(Metric):
         return mat[J][K]
 
     def _print_levenshtein_edits(self,
-                                 hyp: list,
-                                 ref: list,
-                                 traceback):
+                                 hyp: List[str],
+                                 ref: List[str],
+                                 traceback: List[str]) -> None:
         idx_ref = idx_hyp = 0
         for c in traceback:
             match c:
@@ -112,9 +113,9 @@ class WER(Metric):
                     idx_ref += 1
 
     def _traceback_levenshtein(self,
-                               mat,
+                               mat: List[List[int]],
                                j: int,
-                               k: int):
+                               k: int) -> str:
         if j == 0:
             return "i" * k  # if k is not 0, we have k insertion steps (←) to get to (0, 0)
 
@@ -140,8 +141,8 @@ class PER(Metric):
     Position-independent error rate (PER) metric.
     """
     def __call__(self,
-                 hyp: list,
-                 ref: list,
+                 hyp: List[str],
+                 ref: List[str],
                  on_corpus: bool = False) -> float:
         """
         Evaluates the position-independent error rate (PER) between the hypothesis and reference strings.
@@ -161,8 +162,8 @@ class PER(Metric):
         return 1 - ((self._matches(hyp, ref) - max(0, len(hyp) - len(ref))) / len(ref))
 
     def _matches(self,
-                 hyp: list,
-                 ref: list) -> int:
+                 hyp: List[str],
+                 ref: List[str]) -> int:
         """
         Evaluates the number of matches between the hypothesis and reference strings.
 
@@ -179,8 +180,8 @@ class PER(Metric):
 class BLEU(Metric):
 
     def __call__(self,
-                 hyps: list,
-                 refs: list,
+                 hyps: List[List[str]],
+                 refs: List[List[str]],
                  N: int = 4) -> float:
         # calculate modified n-gram precision up to N
         n_gram_precisions = [self._modified_n_gram_precision(hyps, refs, n) for n in range(1, N + 1)]
@@ -198,8 +199,8 @@ class BLEU(Metric):
         return bp * np.exp((1 / N) * modified_precision_sum)
 
     def _modified_n_gram_precision(self,
-                                   hyps: list,
-                                   refs: list,
+                                   hyps: List[List[str]],
+                                   refs: List[List[str]],
                                    n: int) -> float:
         numerator, denominator = 0, 0
 
@@ -215,8 +216,8 @@ class BLEU(Metric):
         return numerator / denominator
 
     def _brevity_penalty(self,
-                         hyp: list,
-                         ref: list) -> float:
+                         hyp: Union[List[str], List[List[str]]],
+                         ref: Union[List[str], List[List[str]]]) -> float:
 
         # calculate accumulated length of hypotheses and references
         l_h, l_r = sum([len(h) for h in hyp]), sum([len(r) for r in ref])
@@ -226,7 +227,9 @@ class BLEU(Metric):
 
         return np.exp(1 - (l_r / l_h))
 
-    def _n_grams(self, tokens: list, n: int):
+    def _n_grams(self,
+                 tokens: List[str],
+                 n: int) -> List[List[str]]:
         """
         Generates n-grams from a list of tokens.
 
