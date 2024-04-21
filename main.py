@@ -51,11 +51,9 @@ if __name__ == "__main__":
     torch_wer = WordErrorRate()
     print(f"Verify WER on corpus with torch: {torch_wer(torch_hyps, torch_refs)}")
 
-
     per = PER()
     corpus_per = per(hyps, refs, on_corpus=True)
     print(f"PER on corpus: {corpus_per}")
-
 
     bleu = BLEU()
     corpus_bleu = bleu(hyps, refs)
