@@ -5,5 +5,5 @@
 It is mostly meant as a source file to be imported in other scripts.
 
 [corpus_statistics.sh](./corpus_statistics.sh) is a bash script that calculates the relevant corpus statistics as described in task 01 of assignment 01. 
-It uses a positional argument as the path to the corpus file and contains a global precision parameter that determines the precision of the calculation of the average sentence length. 
+It uses the first positional argument as the path to the corpus file and the second positional argument as a precision value for the floating point numbers in the output.
 
