@@ -34,6 +34,8 @@ class WER(Metric):
         Returns:
         float: The Word Error Rate (WER) between the hypothesis and reference strings.
         """
+        if len(hyp) == 0 or len(ref) == 0:
+            return 1
 
         if on_corpus:
             return sum([self.levenshtein(h, r) for (h, r) in zip(hyp, ref)]) / sum([len(r) for r in ref])
