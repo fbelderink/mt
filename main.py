@@ -1,9 +1,19 @@
 from metrics.metrics import WER, PER, BLEU
 import argparse
 from torchmetrics.text import WordErrorRate, BLEUScore
+from typing import List, Union
 
 
 def _load_data(path: str,
+               split: bool = True) -> Union[List[str], List[List[str]]]:
+    """
+    Load data from a file.
+    Args:
+        path: The path to the file.
+        split: Whether to split the data by whitespace.
+    Returns: List of strings or list of lists of strings.
+
+    """
     in_file = open(path, 'r', encoding='utf-8')
 
     if split:
@@ -15,7 +25,7 @@ def _load_data(path: str,
     return data
 
 
-def parse_arguments():
+def _parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-hy', '--hyps', type=str)
@@ -25,7 +35,7 @@ def parse_arguments():
 
 
 if __name__ == "__main__":
-    args = parse_arguments()
+    args = _parse_arguments()
 
     hyps = _load_data(args.hyps)
     refs = _load_data(args.refs)
