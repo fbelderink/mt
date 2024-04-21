@@ -3,7 +3,7 @@ import argparse
 from torchmetrics.text import WordErrorRate, BLEUScore
 
 
-def load_data(path, split=True):
+def _load_data(path: str,
     in_file = open(path, 'r', encoding='utf-8')
 
     if split:
@@ -27,11 +27,12 @@ def parse_arguments():
 if __name__ == "__main__":
     args = parse_arguments()
 
-    hyps = load_data(args.hyps)
-    refs = load_data(args.refs)
+    hyps = _load_data(args.hyps)
+    refs = _load_data(args.refs)
 
-    torch_hyps = load_data(args.hyps, split=False)
-    torch_refs = load_data(args.refs, split=False)
+    # get the split data for torch metrics
+    torch_hyps = _load_data(args.hyps, split=False)
+    torch_refs = _load_data(args.refs, split=False)
 
     wer = WER()
     corpus_wer = wer(hyps, refs, on_corpus=True)
