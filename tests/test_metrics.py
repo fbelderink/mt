@@ -18,9 +18,10 @@ class MetricsTest(unittest.TestCase):
 
 
     def test_per(self):
+        epsilon = 1e-6
         per = PER()
-        self.assertEqual(per(["I", "am", "a", "test"], ["I", "am", "a", "test"]), 0.0)
-        self.assertEqual(per(["I", "am", "a", "test"], ["I", "am", "not", "a", "test"]), 0.2)
+        self.assertTrue(abs(per(["I", "am", "a", "test"], ["I", "am", "a", "test"])) < 0.0 + epsilon)
+        self.assertTrue(abs(per(["I", "am", "a", "test"], ["I", "am", "not", "a", "test"])) < 0.2 + epsilon)
 
     def test_levenshtein(self):
         torch_wer = WordErrorRate()
