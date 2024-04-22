@@ -1,9 +1,19 @@
 from metrics.metrics import WER, PER, BLEU
 import argparse
 from torchmetrics.text import WordErrorRate, BLEUScore
+from typing import List, Union
 
 
-def load_data(path, split=True):
+def _load_data(path: str,
+               split: bool = True) -> Union[List[str], List[List[str]]]:
+    """
+    Load data from a file.
+    Args:
+        path: The path to the file.
+        split: Whether to split the data by whitespace.
+    Returns: List of strings or list of lists of strings.
+
+    """
     in_file = open(path, 'r', encoding='utf-8')
 
     if split:
@@ -15,7 +25,7 @@ def load_data(path, split=True):
     return data
 
 
-def parse_arguments():
+def _parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-hy', '--hyps', type=str)
@@ -25,13 +35,14 @@ def parse_arguments():
 
 
 if __name__ == "__main__":
-    args = parse_arguments()
+    args = _parse_arguments()
 
-    hyps = load_data(args.hyps)
-    refs = load_data(args.refs)
+    hyps = _load_data(args.hyps)
+    refs = _load_data(args.refs)
 
-    torch_hyps = load_data(args.hyps, split=False)
-    torch_refs = load_data(args.refs, split=False)
+    # get the split data for torch metrics
+    torch_hyps = _load_data(args.hyps, split=False)
+    torch_refs = _load_data(args.refs, split=False)
 
     wer = WER()
     corpus_wer = wer(hyps, refs, on_corpus=True)
@@ -40,11 +51,9 @@ if __name__ == "__main__":
     torch_wer = WordErrorRate()
     print(f"Verify WER on corpus with torch: {torch_wer(torch_hyps, torch_refs)}")
 
-
     per = PER()
     corpus_per = per(hyps, refs, on_corpus=True)
     print(f"PER on corpus: {corpus_per}")
-
 
     bleu = BLEU()
     corpus_bleu = bleu(hyps, refs)

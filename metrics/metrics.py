@@ -1,34 +1,51 @@
 from abc import abstractmethod
 import numpy as np
 import warnings
+from typing import List, Union
 
 
 class Metric:
-
+    """
+    Abstract parent class for metrics.
+    """
     @abstractmethod
-    def __call__(self, hyp: list, ref: list):
+    def __call__(self,
+                 hyp: List[str],
+                 ref: List[str]):
         ...
 
 
 class WER(Metric):
-    def __call__(self, hyp: list, ref: list, on_corpus=False) -> float:
+    """
+    Word Error Rate (WER) metric.
+    """
+    def __call__(self,
+                 hyp: List[str],
+                 ref: List[str],
+                 on_corpus: bool = False) -> float:
         """
         Evaluates the Word Error Rate (WER) between the hypothesis and reference strings.
 
         Parameters:
         hyp (list): The hypothesis string.
         ref (list): The reference string.
+        on_corpus (bool): Whether to evaluate the WER on a corpus.
 
         Returns:
         float: The Word Error Rate (WER) between the hypothesis and reference strings.
         """
+        if len(hyp) == 0 or len(ref) == 0:
+            return 1
 
         if on_corpus:
             return sum([self.levenshtein(h, r) for (h, r) in zip(hyp, ref)]) / sum([len(r) for r in ref])
 
         return self.levenshtein(hyp, ref) / len(ref)
 
-    def levenshtein(self, hyp: list, ref: list, verbose=False) -> int:
+    def levenshtein(self,
+                    hyp: List[str],
+                    ref: List[str],
+                    verbose: bool = False) -> int:
         """
         Evaluates the Levenshtein distance.
 
@@ -80,7 +97,21 @@ class WER(Metric):
 
         return mat[J][K]
 
-    def _print_levenshtein_edits(self, hyp: list, ref: list, traceback):
+    def _print_levenshtein_edits(self,
+                                 hyp: List[str],
+                                 ref: List[str],
+                                 traceback: str) -> None:
+        """
+        Print the Levenshtein edits.
+
+        Parameters:
+        hyp (list): The hypothesis string.
+        ref (list): The reference string.
+        traceback (list): The traceback of the Levenshtein matrix.
+
+        Returns:
+        None
+        """
         idx_ref = idx_hyp = 0
         for c in traceback:
             match c:
@@ -99,7 +130,21 @@ class WER(Metric):
                     print(f"insert {ref[idx_ref]}")
                     idx_ref += 1
 
-    def _traceback_levenshtein(self, mat, j, k):
+    def _traceback_levenshtein(self,
+                               mat: List[List[int]],
+                               j: int,
+                               k: int) -> str:
+        """
+        Traceback the Levenshtein matrix to get the edit operations.
+
+        Parameters:
+        mat (list): The Levenshtein matrix.
+        j (int): The current vertical position.
+        k (int): The current horizontal position.
+
+        Returns:
+        str: The edit operations.
+        """
         if j == 0:
             return "i" * k  # if k is not 0, we have k insertion steps (←) to get to (0, 0)
 
@@ -121,7 +166,13 @@ class WER(Metric):
 
 
 class PER(Metric):
-    def __call__(self, hyp: list, ref: list, on_corpus=False) -> float:
+    """
+    Position-independent error rate (PER) metric.
+    """
+    def __call__(self,
+                 hyp: List[str],
+                 ref: List[str],
+                 on_corpus: bool = False) -> float:
         """
         Evaluates the position-independent error rate (PER) between the hypothesis and reference strings.
 
@@ -139,7 +190,9 @@ class PER(Metric):
 
         return 1 - ((self._matches(hyp, ref) - max(0, len(hyp) - len(ref))) / len(ref))
 
-    def _matches(self, hyp: list, ref: list) -> int:
+    def _matches(self,
+                 hyp: List[str],
+                 ref: List[str]) -> int:
         """
         Evaluates the number of matches between the hypothesis and reference strings.
 
@@ -154,8 +207,27 @@ class PER(Metric):
 
 
 class BLEU(Metric):
+    """
+    Bilingual Evaluation Understudy (BLEU) metric.
+    """
+    def __call__(self,
+                 hyps: List[List[str]],
+                 refs: List[List[str]],
+                 N: int = 4) -> float:
+        """
+        Evaluates the Bilingual Evaluation Understudy (BLEU) between the hypothesis and reference strings.
 
-    def __call__(self, hyps: list, refs: list, N=4) -> float:
+        Parameters:
+        hyps (list): The hypothesis strings.
+        refs (list): The reference strings.
+        N (int): The maximum n-gram size.
+
+        Returns:
+        float: The BLEU Score
+        """
+        hyp_max_len = max([len(h) for h in hyps])
+        ref_min_len = min([len(r) for r in refs])
+        N = min(hyp_min_len, ref_min_len, N)
         # calculate modified n-gram precision up to N
         n_gram_precisions = [self._modified_n_gram_precision(hyps, refs, n) for n in range(1, N + 1)]
 
@@ -171,7 +243,21 @@ class BLEU(Metric):
 
         return bp * np.exp((1 / N) * modified_precision_sum)
 
-    def _modified_n_gram_precision(self, hyps: list, refs: list, n: int) -> float:
+    def _modified_n_gram_precision(self,
+                                   hyps: List[List[str]],
+                                   refs: List[List[str]],
+                                   n: int) -> float:
+        """
+        Calculates the modified n-gram precision of given hypotheses, references and a specified n..
+        Extends the unigram precision by considering longer sequences of words.
+
+        Parameters:
+        hyps (list): The hypothesis strings.
+        refs (list): The reference strings.
+
+        Returns:
+        float: The modified n-gram precision.
+        """
         numerator, denominator = 0, 0
 
         for (hyp, ref) in zip(hyps, refs):  # for all L (hyp, ref) pairs
@@ -185,8 +271,20 @@ class BLEU(Metric):
 
         return numerator / denominator
 
-    def _brevity_penalty(self, hyp: list, ref: list) -> float:
+    def _brevity_penalty(self,
+                         hyp: Union[List[str], List[List[str]]],
+                         ref: Union[List[str], List[List[str]]]) -> float:
+        """
+        Calculates the brevity penalty for given hypotheses and references.
+        The brevity penalty is relevant for hypotheses that are too short and which potentially allows them to have a perfect precision.
 
+        Parameters:
+        hyp (list): The hypothesis strings.
+        ref (list): The reference strings.
+
+        Returns:
+        float: The brevity penalty.
+        """
         # calculate accumulated length of hypotheses and references
         l_h, l_r = sum([len(h) for h in hyp]), sum([len(r) for r in ref])
 
@@ -195,7 +293,9 @@ class BLEU(Metric):
 
         return np.exp(1 - (l_r / l_h))
 
-    def _n_grams(self, tokens: list, n: int):
+    def _n_grams(self,
+                 tokens: List[str],
+                 n: int) -> List[List[str]]:
         """
         Generates n-grams from a list of tokens.
 
