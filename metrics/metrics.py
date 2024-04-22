@@ -226,7 +226,7 @@ class BLEU(Metric):
         float: The BLEU Score
         """
         hyp_max_len = max([len(h) for h in hyps])
-        ref_max_len = max([len(r) for r in refs])
+        ref_min_len = min([len(r) for r in refs])
         N = min(hyp_min_len, ref_min_len, N)
         # calculate modified n-gram precision up to N
         n_gram_precisions = [self._modified_n_gram_precision(hyps, refs, n) for n in range(1, N + 1)]
