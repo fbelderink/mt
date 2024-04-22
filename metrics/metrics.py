@@ -100,7 +100,7 @@ class WER(Metric):
     def _print_levenshtein_edits(self,
                                  hyp: List[str],
                                  ref: List[str],
-                                 traceback: List[str]) -> None:
+                                 traceback: str) -> None:
         """
         Print the Levenshtein edits.
 
