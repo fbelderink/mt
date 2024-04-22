@@ -227,10 +227,7 @@ class BLEU(Metric):
         """
         hyp_max_len = max([len(h) for h in hyps])
         ref_max_len = max([len(r) for r in refs])
-        if N > hyp_max_len:
-            N = hyp_max_len
-        elif N > ref_max_len:
-            N = ref_max_len
+        N = min(hyp_min_len, ref_min_len, N)
         # calculate modified n-gram precision up to N
         n_gram_precisions = [self._modified_n_gram_precision(hyps, refs, n) for n in range(1, N + 1)]
 
