@@ -34,7 +34,7 @@ class WER(Metric):
         Returns:
         float: The Word Error Rate (WER) between the hypothesis and reference strings.
         """
-        if len(hyp) == 0 or len(ref) == 0:
+        if (len(hyp) == 0 or len(ref) == 0) and (len(hyp) != len(ref)):
             return 1
 
         if on_corpus:
