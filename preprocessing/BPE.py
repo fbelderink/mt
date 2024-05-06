@@ -1,4 +1,5 @@
 from typing import List
+import datetime
 
 # adds spaces between letters and 
 # adds ␇ after the word to indicate the end of word 
@@ -46,21 +47,22 @@ def executeOperation(word: str, operation: List[str]) -> str:
 	res += subWordList[-1] 
 	return res
 
-def generateBPE(training_data: str, operations_number: int) -> List[List[str]]:
+def generateBPE(training_data_list: List[str], operations_number: int) -> List[List[str]]:
 	operations = []
 
 	# step 1 
 	# create a dictinary with split words and number of occurrences 
 	word_occurrences = dict()
-	with open(training_data, 'r') as file:
-		for line in file:
-			for word in line.split():
-				split_word = splitAndAddEndOfWordSymbol(word)
+	for training_data_file in training_data_list:
+		with open(training_data_file, 'r') as file:
+			for line in file:
+				for word in line.split():
+					split_word = splitAndAddEndOfWordSymbol(word)
 
-				if split_word in word_occurrences:
-					word_occurrences[split_word] += 1
-				else:
-					word_occurrences[split_word] = 1 
+					if split_word in word_occurrences:
+						word_occurrences[split_word] += 1
+					else:
+						word_occurrences[split_word] = 1 
 
 
 	for i in range(operations_number):
@@ -149,6 +151,10 @@ def undoBPEonText(source_file: str, target_file: str):
 
 
 
+# print(datetime.datetime.now().time())
+#performBPEonText(generateBPE("test.txt",50),"test.txt","target.txt")
+# print(datetime.datetime.now().time())
 
+#undoBPEonText("target.txt","target_undid.txt")
 
 

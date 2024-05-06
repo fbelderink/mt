@@ -10,8 +10,11 @@ class Dictionary:
 		return str(list(self.vocabulary.items()))
 
 	def getStringAtIndex(self, index: int):
-		# Retrieve the string at a given index in the dictionary
-		return self.vocabulary.get(index, "Index not found")
+		# Retrieve the string at a given index in the dictionary or raise a KeyError
+		if index in self.vocabulary:
+			return self.vocabulary[index]
+		else:
+			raise KeyError(f"Index {index} not found in the vocabulary")
 
 	def setStringAtIndex(self, index: int, value: str):
 		# Set or update the string at a specific index in the dictionary
@@ -33,6 +36,10 @@ class Dictionary:
 		self.vocabulary[index] = value
 		return index  # Return the index where the string was added
 
+	def getSize(self):
+		# Return the size of the vocabulary
+		return len(self.vocabulary)
+
 	def isContained(self, item):
 		# Check if a specific index or string is in the dictionary
 		if isinstance(item, int):
@@ -47,20 +54,21 @@ class Dictionary:
 		self.vocabulary.clear()
 
 
-	def generateVocabulary(self,source_file: str, operations: List[List[str]]):
+	def generateVocabulary(self,source_file_list: List[str], operations: List[List[str]]):
 		# save the words with operations applied to them so that the 
 		# operations don't have to be performed twice for the same word
 		transformed_words = dict()
 		
-		with open(source_file, 'r') as s_file:
-			for s_line in s_file:
-				for word in s_line.split():
-					if not (word in transformed_words):
-						split_word = splitAndAddEndOfWordSymbol(word)
-						for operation in operations:
-							split_word = executeOperation(split_word, operation)
+		for source_file in source_file_list:
+			with open(source_file, 'r') as s_file:
+				for s_line in s_file:
+					for word in s_line.split():
+						if not (word in transformed_words):
+							split_word = splitAndAddEndOfWordSymbol(word)
+							for operation in operations:
+								split_word = executeOperation(split_word, operation)
 
-						transformed_words[word] = split_word
+							transformed_words[word] = split_word
 
 		self.emptyDictionary()
 		for split_word in transformed_words.values():
