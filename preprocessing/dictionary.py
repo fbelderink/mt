@@ -25,7 +25,7 @@ class Dictionary:
 		for key, val in self.vocabulary.items():
 			if val == string:
 				return key
-		return None  # If not found, return None
+		return 0  # If not found, return None
 
 	def addString(self, value: str):
 		# Find the first available index to add the specified string
@@ -71,6 +71,9 @@ class Dictionary:
 							transformed_words[word] = split_word
 
 		self.emptyDictionary()
+		self.addString("<UNK>")
+		self.addString("<s>")
+		self.addString("</s>")
 		for split_word in transformed_words.values():
 			for subword in split_word.split():
 				if not self.isContained(subword):
