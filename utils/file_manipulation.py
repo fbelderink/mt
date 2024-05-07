@@ -1,7 +1,8 @@
 from typing import List, Union
 
+
 def load_data(path: str,
-               split: bool = True) -> Union[List[str], List[List[str]]]:
+              split: bool = True) -> Union[List[str], List[List[str]]]:
     """
     Load data from a file.
     Args:
