@@ -25,7 +25,6 @@ def _append_eos_to_sentences(data: List[List[str]]):
 
 def _get_target_labels(target_data: List[List[str]]):
     #  flatten data and reshape to shape (N, 1)
-    target_data = [[word + ('␇' if word != '</s>' else '') for word in sentence] for sentence in target_data]
     flattened_data = np.hstack(target_data).reshape(-1, 1)
 
     return flattened_data
@@ -40,8 +39,6 @@ def _get_padded_sentence(sentence: List[str], indices: tuple):
         padded_sentence += sentence[max(0, indices[0] - 1): indices[1]]
     else:
         padded_sentence += sentence[max(0, indices[0] - 1):] + (['</s>'] * (indices[1] - len(sentence)))
-
-    padded_sentence = [s + ('␇' if s not in ['<s>', '</s>', '<UNK>'] else '') for s in padded_sentence]
 
     return padded_sentence
 
@@ -94,14 +91,14 @@ def create_batch(source_data: List[List[str]], target_data: List[List[str]], win
     return batches
 
 
-def get_index_batches(batches: List[tuple], hyps_dict: Dictionary, refs_dict: Dictionary):
+def get_index_batches(batches: List[tuple], source_dict: Dictionary, target_dict: Dictionary):
     index_batches = []
     for batch in batches:
         S, T, L = batch
 
-        get_hyps_idx = np.vectorize(hyps_dict.getIndexOfString)
-        get_refs_idx = np.vectorize(refs_dict.getIndexOfString)
+        get_source_idx = np.vectorize(source_dict.get_index_of_string)
+        get_target_idx = np.vectorize(target_dict.get_index_of_string)
 
-        index_batches.append((get_hyps_idx(S), get_refs_idx(T), get_refs_idx(L)))
+        index_batches.append((get_source_idx(S), get_target_idx(T), get_target_idx(L)))
 
     return index_batches
