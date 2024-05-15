@@ -3,3 +3,5 @@
 env/
 TODO.txt
 .vscode/
+eval/
+__pycache__/
