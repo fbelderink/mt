@@ -20,8 +20,5 @@ if __name__ == "__main__":
     multi30k_de = load_data(args.hyps)
     multi30k_en = load_data(args.refs)
 
-
     task_evaluate(multi30k_de, multi30k_en)
     task_batches(args.window_size, args.batch_size, multi30k_de, multi30k_en)
-
-

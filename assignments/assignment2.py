@@ -26,7 +26,7 @@ def task_evaluate(multi30k_de: List[List[str]], multi30k_en: List[List[str]]):
         print()
 
 
-def task_batches(window_size, batch_size, multi30k_de, multi30k_en):
+def task_batches(window_size, batch_size, multi30k_de, multi30k_en, lines=(1100, 1200)):
     num_operations = 1000
 
     german_ops = generate_bpe(multi30k_de, num_operations)
@@ -35,12 +35,12 @@ def task_batches(window_size, batch_size, multi30k_de, multi30k_en):
     bpe_de, transformed_words_de = perform_bpe(multi30k_de, german_ops)
     bpe_en, transformed_words_en = perform_bpe(multi30k_en, english_ops)
 
-    batches = create_batch(bpe_de[1100:1200],
-                           bpe_en[1100:1200],
+    batches = create_batch(bpe_de[lines[0]:lines[1]],
+                           bpe_en[lines[0]:lines[1]],
                            window_size,
                            batch_size)
 
-    save_batches('eval/string_batches', batches)
+    save_batches('eval/string_batches_old', batches)
 
     dic_de = Dictionary()
     dic_de.generate_vocabulary([], german_ops, transformed_words=transformed_words_de)
@@ -49,4 +49,4 @@ def task_batches(window_size, batch_size, multi30k_de, multi30k_en):
     dic_en.generate_vocabulary([], english_ops, transformed_words=transformed_words_en)
 
     index_batches = get_index_batches(batches, dic_de, dic_en)
-    save_batches('eval/index_batches', index_batches)
+    save_batches('eval/index_batches_old', index_batches)

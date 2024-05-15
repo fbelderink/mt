@@ -43,12 +43,11 @@ class Dictionary:
         return 0  # If not found, return None
 
     def add_string(self, value: str):
-        # Find the first available index to add the specified string
-        index = 0
-        # Loop to find the first available index
-        while index in self.vocabulary:
-            index += 1
+
+        index = len(self.vocabulary)
+
         self.vocabulary[index] = value
+
         return index  # Return the index where the string was added
 
     def empty(self):
@@ -71,6 +70,7 @@ class Dictionary:
                     self.add_string(token)
 
     def apply_vocabulary_to_text(self, data: List[List[str]]):
+        # expects data with bpe applied
         new_data = []
         for sentence in data:
             new_sentence = []

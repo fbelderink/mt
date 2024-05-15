@@ -21,7 +21,7 @@ def _get_token_pair_occurrences(word: str) -> dict[str, int]:
     return token_pair_occurrences
 
 
-# executes a list of pulling-together-operations on a single word
+# executes one pulling-together-operation on a single word
 def _execute_operation(word: str, operation: List[str]) -> str:
     res = ''
     subWordList = word.split()
