@@ -1,60 +1,61 @@
 from typing import List
 from preprocessing.BPE import perform_bpe
+import pickle
 
 
 class Dictionary:
     # Initialize the dictionary
-    def __init__(self):
-        self.vocabulary = dict()
+    def __init__(self, data: List[List[str]], operations: List[List[str]], transformed_words=None):
+        self._word_to_idx_vocab = dict()
+        self._idx_to_word_vocab = dict()
+        self._operations = operations
+
+        self._generate_vocabulary(data, operations, transformed_words)
 
     def __str__(self):
         # Return a string representation of the dictionary's contents
-        return str(list(self.vocabulary.items()))
+        return str(list(self._idx_to_word_vocab.items()))
 
     def __len__(self):
         # Return the size of the vocabulary
-        return len(self.vocabulary)
+        return len(self._word_to_idx_vocab)
 
     def __contains__(self, item):
         # Check if a specific index or string is in the dictionary
         if isinstance(item, int):
-            return item in self.vocabulary
+            return item in self._idx_to_word_vocab
         elif isinstance(item, str):
-            return item in self.vocabulary.values()
-        else:
-            raise TypeError("Invalid type. Expected int or str.")
+            return item in self._word_to_idx_vocab
+
+        return False
 
     def get_string_at_index(self, index: int):
         # Retrieve the string at a given index in the dictionary or raise a KeyError
-        if index in self.vocabulary:
-            return self.vocabulary[index]
-        else:
-            raise KeyError(f"Index {index} not found in the vocabulary")
+        if index in self:
+            return self._idx_to_word_vocab[index]
 
-    def set_string_at_index(self, index: int, value: str):
-        # Set or update the string at a specific index in the dictionary
-        self.vocabulary[index] = value
+        return self._idx_to_word_vocab[0] # return UNK token
 
     def get_index_of_string(self, string: str):
         # Get the index of a given string in the dictionary
-        for key, val in self.vocabulary.items():
-            if val == string:
-                return key
-        return 0  # If not found, return None
+        if string in self:
+            return self._word_to_idx_vocab[string]
+
+        return 0  # If not found, return UNK
 
     def add_string(self, value: str):
 
-        index = len(self.vocabulary)
+        index = len(self)
 
-        self.vocabulary[index] = value
-
-        return index  # Return the index where the string was added
+        self._idx_to_word_vocab[index] = value
+        self._word_to_idx_vocab[value] = index
 
     def empty(self):
         # Clear the dictionary's contents
-        self.vocabulary.clear()
+        self._word_to_idx_vocab.clear()
+        self._idx_to_word_vocab.clear()
 
-    def generate_vocabulary(self, data: List[List[str]], operations: List[List[str]], transformed_words=None):
+    def _generate_vocabulary(self, data: List[List[str]], operations: List[List[str]], transformed_words=None):
         # save the words with operations applied to them so that the
         # operations don't have to be performed twice for the same word
         if not transformed_words:
@@ -69,15 +70,22 @@ class Dictionary:
                 if not (token in self):
                     self.add_string(token)
 
-    def apply_vocabulary_to_text(self, data: List[List[str]]):
-        # expects data with bpe applied
+    def apply_vocabulary_to_text(self, data: List[List[str]], bpe_performed=False):
+        if not bpe_performed:
+            data, _ = perform_bpe(data, self._operations)
+
         new_data = []
         for sentence in data:
             new_sentence = []
-            for word in sentence:
-                if word in self:
-                    new_sentence.append(word)
+            for token in sentence:
+                if token in self:
+                    new_sentence.append(token)
                 else:
-                    new_sentence.append('<UNK>')
+                    new_sentence.append(self.get_string_at_index(0))  # UNK
             new_data.append(new_sentence)
         return new_data
+
+    def save(self, path):
+        with open(path, 'wb') as f:
+            pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
+
