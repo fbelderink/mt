@@ -5,3 +5,4 @@ TODO.txt
 .vscode/
 eval/
 __pycache__/
+data/

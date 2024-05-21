@@ -1,6 +1,6 @@
 import argparse
 from utils.file_manipulation import load_data
-from assignments.assignment2 import task_batches, task_evaluate
+from assignments.assignment3 import *
 
 
 def _parse_arguments() -> argparse.Namespace:
@@ -20,5 +20,6 @@ if __name__ == "__main__":
     multi30k_de = load_data(args.hyps)
     multi30k_en = load_data(args.refs)
 
-    task_evaluate(multi30k_de, multi30k_en)
-    task_batches(args.window_size, args.batch_size, multi30k_de, multi30k_en)
+    # generate dataset
+    #generate_dataset(multi30k_de, multi30k_en, args.window_size, 7000, save_path='data/train7k.pt')
+    test_dataset_load('data/train7k.pt')
