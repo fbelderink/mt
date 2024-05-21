@@ -1,4 +1,6 @@
 from typing import List, Union
+import torch
+import torch.nn as nn
 
 
 def load_data(path: str,
@@ -43,3 +45,12 @@ def save_batches(path: str, batches: List[tuple]):
             out_file.write(line)
 
     out_file.close()
+
+
+def save_model(path: str, model: nn.Module):
+    torch.save(model.state_dict(), path)
+
+
+def load_model(path: str, model: nn.Module) -> nn.Module:
+    model.load_state_dict(torch.load(path))
+    return model
