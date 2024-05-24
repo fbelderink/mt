@@ -13,7 +13,8 @@ class LinearLayer(nn.Module):
         if bias:
             self.bias = nn.Parameter(torch.zeros(batch_size, out_features))
 
-    def forward(self, x):
+    def forward(self, S, T):
+        x = torch.cat((S, T), dim=1)
         if self.has_bias:
             return torch.add(torch.bmm(self.W, x), self.bias)
 

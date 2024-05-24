@@ -19,6 +19,9 @@ class TranslationDataset(Dataset):
         self._target_window_mat = torch.from_numpy(T)
         self._labels = torch.from_numpy(L)
 
+        self.source_dict_size = len(source_dict)
+        self.target_dict_size = len(target_dict)
+
     def __len__(self):
         return self._source_window_mat.shape[0]
 
@@ -31,3 +34,9 @@ class TranslationDataset(Dataset):
 
     def save(self, path):
         torch.save(self, path)
+
+    def get_source_dict_size(self):
+        return self.source_dict_size
+    
+    def get_target_dict_size(self):
+        return self.target_dict_size

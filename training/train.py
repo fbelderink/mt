@@ -7,13 +7,14 @@ from preprocessing.dataset import TranslationDataset
 
 
 def train(train_path: str, validation_path: str, max_epochs=200, batch_size=200,
-          shuffle=True, num_workers=4, lr=1e-3, eval_rate=100):
+          shuffle=False, num_workers=0, lr=1e-3, eval_rate=100):
     """
     TODO
     - add tensorboard
     - do eval
     - add checkpoints for saving the model
     """
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f"training on {device}")
 
@@ -23,7 +24,7 @@ def train(train_path: str, validation_path: str, max_epochs=200, batch_size=200,
     validation_set = TranslationDataset.load(validation_path)
     validation_dataloader = DataLoader(validation_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
 
-    model = BasicNet().to(device)
+    model = BasicNet(batch_size,train_set.get_source_dict_size(),train_set.get_target_dict_size()).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     model.print_structure()
@@ -35,6 +36,7 @@ def train(train_path: str, validation_path: str, max_epochs=200, batch_size=200,
     for epoch in range(max_epochs):
         correct_predictions = 0
         steps = 0
+        batch_correct_predictions = 0
         for S, T, L in train_dataloader:
 
             S = S.to(device)
@@ -53,13 +55,20 @@ def train(train_path: str, validation_path: str, max_epochs=200, batch_size=200,
             # keep track of metrics
             steps += 1
             total_loss += loss.item()
-            if torch.argmax(pred) == L:
-                correct_predictions += 1
+            
+            
+            for p, l in zip(torch.argmax(pred,dim=1),L):
+                if p == l:
+                    batch_correct_predictions += 1
+            
+            batch_accuracy = correct_predictions / batch_size
+            batch_perplexity = torch.exp(loss)
 
-            accuracy = correct_predictions / steps
-            perplexity = torch.exp(loss)
+            print("batch_accuracy:" + str(batch_accuracy))
+            print("batch_perplexity:" + str(batch_perplexity.item()))
 
             # evaluate model every k updates
+            """ 
             if total_steps % eval_rate == 0:
                 model.eval()
                 for S_v, T_v, L_v in validation_dataloader:
@@ -72,13 +81,11 @@ def train(train_path: str, validation_path: str, max_epochs=200, batch_size=200,
                         # do some eval
 
                 model.train()
+            """
 
         # keep track of total metrics
         total_steps += steps
-        total_correct_predictions += correct_predictions
-        total_accuracy = (total_correct_predictions / total_steps)
-        steps = 0
-        correct_predictions = 0
-
+        total_correct_predictions += batch_correct_predictions
+        total_accuracy = total_correct_predictions / (total_steps*batch_size)
 
 
