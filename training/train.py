@@ -7,12 +7,13 @@ from preprocessing.dataset import TranslationDataset
 
 
 def train(train_path: str, validation_path: str, max_epochs=200, batch_size=200,
-          shuffle=False, num_workers=0, lr=1e-3, eval_rate=100):
+          shuffle=False, num_workers=0, lr=1e-4, eval_rate=100, half_learningrate = True):
     """
     TODO
     - add tensorboard
     - do eval
     - add checkpoints for saving the model
+    - half learning rate if perfomance stagenates on evaluation set
     """
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -20,6 +21,7 @@ def train(train_path: str, validation_path: str, max_epochs=200, batch_size=200,
 
     train_set = TranslationDataset.load(train_path)
     train_dataloader = DataLoader(train_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+    print("number of Batches: " + str(len(train_dataloader)))
 
     validation_set = TranslationDataset.load(validation_path)
     validation_dataloader = DataLoader(validation_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
@@ -34,9 +36,7 @@ def train(train_path: str, validation_path: str, max_epochs=200, batch_size=200,
     total_correct_predictions = 0
 
     for epoch in range(max_epochs):
-        correct_predictions = 0
         steps = 0
-        batch_correct_predictions = 0
         for S, T, L in train_dataloader:
 
             S = S.to(device)
@@ -55,13 +55,12 @@ def train(train_path: str, validation_path: str, max_epochs=200, batch_size=200,
             # keep track of metrics
             steps += 1
             total_loss += loss.item()
-            
-            
+            batch_correct_predictions = 0
             for p, l in zip(torch.argmax(pred,dim=1),L):
                 if p == l:
                     batch_correct_predictions += 1
             
-            batch_accuracy = correct_predictions / batch_size
+            batch_accuracy = batch_correct_predictions / batch_size
             batch_perplexity = torch.exp(loss)
 
             print("batch_accuracy:" + str(batch_accuracy))
@@ -82,6 +81,8 @@ def train(train_path: str, validation_path: str, max_epochs=200, batch_size=200,
 
                 model.train()
             """
+
+
 
         # keep track of total metrics
         total_steps += steps

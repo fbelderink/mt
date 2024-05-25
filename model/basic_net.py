@@ -13,11 +13,12 @@ class BasicNet(nn.Module):
         TODO: 
         - replace linear layers optionally
         - eigener Linear layer verwenden
+        - add Batch norm
         """
         #Hyper parameters
-        embed_dim = 100
-        hidden_dim_1 = 100 
-        hidden_dim_2 = 100
+        embed_dim = 200
+        hidden_dim_1 = 300 
+        hidden_dim_2 = 500
 
         # embedding layers 
         self.source_embedding = nn.Embedding(source_dict_size, embed_dim)
@@ -73,7 +74,7 @@ class BasicNet(nn.Module):
         fc2_output = F.relu(fc2_output)
         
         # Output layer with softmax activation
-        output = nn.functional.softmax(self.output_layer(fc2_output), dim=-1)
+        output = self.output_layer(fc2_output)
 
         # reshape output so that it has dimensions batch_size x target_voc_size
         # TODO might be wrong 
