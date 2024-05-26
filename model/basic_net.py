@@ -18,9 +18,10 @@ class BasicNet(nn.Module):
         #Hyper parameters
 
 
-        self.embed_dim = config.dimensions[0]
-        self.hidden_dim_1 = config.dimensions[1]
-        self.hidden_dim_2 = config.dimensions[2]
+        self.hidden_dim_1 = config.dimensions[0]
+        self.hidden_dim_2 = config.dimensions[1]
+        self.embed_dim = config.dimensions[2]
+
         self.activation_function = config.activation
         self.optimizer = config.optimizer
         self.init_learning_rate = config.learning_rate
@@ -115,8 +116,8 @@ class BasicNet(nn.Module):
 
         """
 
-        for i in self.named_children():
-            print(i)
+        for i in self.parameters():
+            print(i.shape)
         print()
 
 

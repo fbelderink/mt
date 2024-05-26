@@ -26,6 +26,6 @@ if __name__ == "__main__":
     with open("eval/dict_en.pkl", 'rb') as f:
         dict_en = pickle.load(f)
      #generate dataset
-    generate_dataset(multi30k_de, multi30k_en, args.window_size, 7000, save_path='data/integrative_test.pt', dict_en=dict_en, dict_de=dict_de)
+    generate_dataset(multi30k_de, multi30k_en, args.window_size, 7000, save_path='data/integrative_test.pt')
     test_dataset_load('data/integrative_test.pt')
     train.train("data/integrative_test.pt", None, Hyperparameters(ConfigLoader("utils/config.yaml").get_config()))
