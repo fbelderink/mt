@@ -11,7 +11,6 @@ def _count_correct_predictions(pred, L):
     for p, l in zip(torch.argmax(pred,dim=1),L):
         if p == l:
            correct_predictions += 1
-        #print(p, l)
     return correct_predictions
 
 def _count_correct_predictions_v(pred, L):
@@ -29,7 +28,7 @@ def _count_correct_predictions_v(pred, L):
 
 
 def train(train_path: str, validation_path: str, max_epochs=400, batch_size=200,
-          shuffle=True, num_workers=0, lr=1e-3, eval_rate=1000000, half_learningrate = True):
+          shuffle=True, num_workers=0, lr=1e-3, eval_rate=1000, half_learningrate = True):
     """
     TODO
     - add tensorboard
@@ -83,20 +82,18 @@ def train(train_path: str, validation_path: str, max_epochs=400, batch_size=200,
             batch_accuracy = batch_correct_predictions / true_batch_size
             batch_perplexity = torch.exp(loss)
 
-            if steps % 1 == 0:
+            if steps % 10 == 0:
                 print("batch_accuracy:" + str(batch_accuracy))
                 print("batch_perplexity:" + str(batch_perplexity.item()))
                 print("epoch: " + str(epoch))
                 print("steps: " + str(steps))
-            else:
-                print("steps: " + str(steps) + " batch_accuracy: " + str(batch_accuracy))
-
             
             # evaluate model every eval_rate updates
             if total_steps % eval_rate == 0:
                 model.eval()
 
-                total_validation_perplexity = 0
+                #total_validation_perplexity = 0
+                summed_cross_entropy = 0
                 total_validation_correct_predictions = 0
                 total_number_of_validation_samples = 0
 
@@ -111,12 +108,13 @@ def train(train_path: str, validation_path: str, max_epochs=400, batch_size=200,
 
                         total_validation_correct_predictions += _count_correct_predictions(pred_v, L_v)
 
-                        # compute loss without averaging 
-                        loss_v = model.compute_loss(pred_v, L_v, False)
-                        total_validation_perplexity += torch.exp(loss_v).item()
-                    
+                        # compute cross entropy without averaging 
+                        summed_cross_entropy += model.compute_loss(pred_v, L_v, False)
+
+                
+                                
                 validation_accuracy = total_validation_correct_predictions / total_number_of_validation_samples
-                validation_perplexity = total_validation_perplexity / total_number_of_validation_samples
+                validation_perplexity = torch.exp(summed_cross_entropy / total_number_of_validation_samples).item()    
                 print()
                 print("Validation:")
                 print("Validation accuracy: " + str(validation_accuracy))

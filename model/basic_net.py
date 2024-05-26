@@ -1,5 +1,5 @@
 import torch.nn as nn
-from model.layers import linear
+from model.layers.linear import LinearLayer
 import torch
 import math
 import torch.nn.functional as F
@@ -7,44 +7,58 @@ import torch.nn.functional as F
 
 
 class BasicNet(nn.Module):
-    def __init__(self,batch_size,source_dict_size,target_dict_size, replace_linear_layer=False):
+    def __init__(self,batch_size,source_dict_size,target_dict_size, replace_linear_layer=True):
         super(BasicNet, self).__init__()
         """
         TODO: 
-        - replace linear layers optionally
-        - eigener Linear layer verwenden
         - add Batch norm
         """
         #Hyper parameters
-        embed_dim = 200
-        hidden_dim_1 = 300 
-        hidden_dim_2 = 300
-
-        # embedding layers 
-        self.source_embedding = nn.Embedding(source_dict_size, embed_dim)
-        self.target_embedding = nn.Embedding(target_dict_size, embed_dim)
-
-        # Fully connected source and target layers
-        self.fc_source = nn.Linear(embed_dim, hidden_dim_1)
-        self.fc_target = nn.Linear(embed_dim, hidden_dim_1)
-
-        # Concatenation layer 
-        self.concat = nn.Linear(hidden_dim_1, hidden_dim_2)
-
-        # Fully Connected Layer 1
-        self.fc1 = nn.Linear(hidden_dim_2, target_dict_size)
-        
-        # Fully Connected Layer 2 / Projection
-        self.fc2 = nn.Linear(target_dict_size, target_dict_size)
-
-        # Output layer
-        self.output_layer = nn.Linear(target_dict_size,target_dict_size)
+        embed_size = 100
+        hidden_dim_1 = 400 
+        hidden_dim_2 = 500
 
         # Model's loss function
         self.loss_sum = nn.CrossEntropyLoss(reduction="sum")
         self.loss_mean = nn.CrossEntropyLoss()
 
-        #self.linear1 = linear.LinearLayer(batch_size,5,5,True)
+        # embedding layers 
+        self.source_embedding = nn.Embedding(source_dict_size, embed_size)
+        self.target_embedding = nn.Embedding(target_dict_size, embed_size)
+
+        if replace_linear_layer:
+            # Fully connected source and target layers
+            self.fc_source = nn.Linear(embed_size, hidden_dim_1)
+            self.fc_target = nn.Linear(embed_size, hidden_dim_1)
+
+            # Concatenation layer 
+            self.concat = nn.Linear(hidden_dim_1, hidden_dim_2)
+
+            # Fully Connected Layer 1
+            self.fc1 = nn.Linear(hidden_dim_2, hidden_dim_2)
+            
+            # Fully Connected Layer 2 / Projection
+            self.fc2 = nn.Linear(hidden_dim_2, hidden_dim_2)
+
+            # Output layer
+            self.output_layer = nn.Linear(hidden_dim_2,target_dict_size)
+        else:
+            # Fully connected source and target layers
+            self.fc_source = LinearLayer(batch_size,embed_size, hidden_dim_1)
+            self.fc_target = LinearLayer(batch_size,embed_size, hidden_dim_1)
+
+            # Concatenation layer 
+            self.concat = LinearLayer(batch_size,hidden_dim_1, hidden_dim_2)
+
+            # Fully Connected Layer 1
+            self.fc1 = LinearLayer(batch_size,hidden_dim_2, hidden_dim_2)
+            
+            # Fully Connected Layer 2 / Projection
+            self.fc2 = LinearLayer(batch_size,hidden_dim_2, hidden_dim_2)
+
+            # Output layer
+            self.output_layer = LinearLayer(batch_size,hidden_dim_2,target_dict_size)
+        
 
 
 
@@ -78,7 +92,6 @@ class BasicNet(nn.Module):
         output = self.output_layer(fc2_output)
 
         # reshape output so that it has dimensions batch_size x target_voc_size
-        # TODO might be wrong 
         output = output.mean(dim=1)
 
         return output
