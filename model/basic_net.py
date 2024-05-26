@@ -15,8 +15,8 @@ class BasicNet(nn.Module):
         """
         #Hyper parameters
         embed_size = 100
-        hidden_dim_1 = 400 
-        hidden_dim_2 = 500
+        hidden_dim_1 = 100 
+        hidden_dim_2 = 200
 
         # Model's loss function
         self.loss_sum = nn.CrossEntropyLoss(reduction="sum")

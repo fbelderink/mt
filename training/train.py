@@ -12,27 +12,14 @@ def _count_correct_predictions(pred, L):
         if p == l:
            correct_predictions += 1
     return correct_predictions
-
-def _count_correct_predictions_v(pred, L):
-    correct_predictions = 0
-    i = 0
-    for p, l in zip(torch.argmax(pred,dim=1),L):
-        if p == l:
-            correct_predictions += 1
-        if i < 15:    
-            print(p, l)
-        else:
-            break
-        i+=1
             
 
 
 def train(train_path: str, validation_path: str, max_epochs=400, batch_size=200,
-          shuffle=True, num_workers=0, lr=1e-3, eval_rate=1000, half_learningrate = True):
+          shuffle=True, num_workers=0, lr=1e-3, eval_rate=100, half_learningrate = True):
     """
     TODO
     - add tensorboard
-    - do eval
     - add checkpoints for saving the model
     - optinally half learning rate if perfomance stagenates on evaluation set
     """
@@ -55,6 +42,8 @@ def train(train_path: str, validation_path: str, max_epochs=400, batch_size=200,
     total_loss = 0
     total_steps = 0
     total_correct_predictions = 0
+
+    previous_validation_perplexity = 0
 
     for epoch in range(max_epochs):
         steps = 0
@@ -119,9 +108,18 @@ def train(train_path: str, validation_path: str, max_epochs=400, batch_size=200,
                 print("Validation:")
                 print("Validation accuracy: " + str(validation_accuracy))
                 print("Validation perplexity: " + str(validation_perplexity))
-                print()
+                
 
+                if previous_validation_perplexity != 0 and previous_validation_perplexity <= validation_perplexity:
+                    for param_group in optimizer.param_groups:
+                        param_group['lr'] = param_group['lr'] / 2
+                    print("learning rate halfed; new learning rate: "+ str(optimizer.param_groups[0]['lr']))
+
+                previous_validation_perplexity = validation_perplexity
+                print()
                 model.train()
+
+                
             
 
 
