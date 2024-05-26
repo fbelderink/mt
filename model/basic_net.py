@@ -3,11 +3,11 @@ from model.layers import linear
 import torch
 import math
 import torch.nn.functional as F
-
+from utils.hyperparameters import Hyperparameters
 
 
 class BasicNet(nn.Module):
-    def __init__(self,batch_size,source_dict_size,target_dict_size, replace_linear_layer=False):
+    def __init__(self,batch_size,source_dict_size,target_dict_size, config: Hyperparameters):
         super(BasicNet, self).__init__()
         """
         TODO: 
@@ -16,23 +16,32 @@ class BasicNet(nn.Module):
         - add Batch norm
         """
         #Hyper parameters
-        embed_dim = 200
-        hidden_dim_1 = 300 
-        hidden_dim_2 = 500
+
+
+        self.embed_dim = config.dimensions[0]
+        self.hidden_dim_1 = config.dimensions[1]
+        self.hidden_dim_2 = config.dimensions[2]
+        self.activation_function = config.activation
+        self.optimizer = config.optimizer
+        self.init_learning_rate = config.learning_rate
+        self.use_custom_ll = config.use_custom_ll
+        self.batch_size = config.batch_size
+
+
 
         # embedding layers 
-        self.source_embedding = nn.Embedding(source_dict_size, embed_dim)
-        self.target_embedding = nn.Embedding(target_dict_size, embed_dim)
+        self.source_embedding = nn.Embedding(source_dict_size, self.embed_dim)
+        self.target_embedding = nn.Embedding(target_dict_size, self.embed_dim)
 
         # Fully connected source and target layers
-        self.fc_source = nn.Linear(embed_dim, hidden_dim_1)
-        self.fc_target = nn.Linear(embed_dim, hidden_dim_1)
+        self.fc_source = nn.Linear(self.embed_dim, self.hidden_dim_1)
+        self.fc_target = nn.Linear(self.embed_dim, self.hidden_dim_1)
 
         # Concatenation layer 
-        self.concat = nn.Linear(hidden_dim_1, hidden_dim_2)
+        self.concat = nn.Linear(self.hidden_dim_1, self.hidden_dim_2)
 
         # Fully Connected Layer 1
-        self.fc1 = nn.Linear(hidden_dim_2, target_dict_size)
+        self.fc1 = nn.Linear(self.hidden_dim_2, target_dict_size)
         
         # Fully Connected Layer 2 / Projection
         self.fc2 = nn.Linear(target_dict_size, target_dict_size)
@@ -72,7 +81,7 @@ class BasicNet(nn.Module):
 
         fc2_output = self.fc2(fc1_output)
         fc2_output = F.relu(fc2_output)
-        
+
         # Output layer with softmax activation
         output = self.output_layer(fc2_output)
 
