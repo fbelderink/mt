@@ -20,10 +20,9 @@ def _count_correct_predictions(pred, L):
 
 
 def train(train_path: str, validation_path: str, config: Hyperparameters, max_epochs=200,
-          shuffle=False, num_workers=0, eval_rate=100, half_learningrate = True):
+          shuffle=False, num_workers=0, eval_rate=-1, half_learningrate = True):
     """
     TODO
-    - add tensorboard
     - add checkpoints for saving the model
     """
     lr = config.learning_rate
@@ -135,7 +134,7 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
             if total_steps % eval_rate == 0:
                 model.eval()
 
-                #total_validation_perplexity = 0
+                # total_validation_perplexity = 0
                 summed_cross_entropy = 0
                 total_validation_correct_predictions = 0
                 total_number_of_validation_samples = 0
@@ -154,8 +153,6 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
                         # compute cross entropy without averaging
                         summed_cross_entropy += model.compute_loss(pred_v, L_v, False)
 
-
-
                     validation_accuracy = total_validation_correct_predictions / total_number_of_validation_samples
                     validation_perplexity = torch.exp(summed_cross_entropy / total_number_of_validation_samples).item()
                     print()
@@ -163,11 +160,10 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
                     print("Validation accuracy: " + str(validation_accuracy))
                     print("Validation perplexity: " + str(validation_perplexity))
 
-
                     if previous_validation_perplexity != 0 and previous_validation_perplexity <= validation_perplexity:
                         for param_group in optimizer.param_groups:
                             param_group['lr'] = param_group['lr'] / 2
-                        print("learning rate halfed; new learning rate: "+ str(optimizer.param_groups[0]['lr']))
+                        print("learning rate halfed; new learning rate: " + str(optimizer.param_groups[0]['lr']))
 
                     previous_validation_perplexity = validation_perplexity
                     print()
@@ -177,7 +173,8 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
                 epoch_count+=1
 
 
-if __name__ == '__main__':
+'''if __name__ == '__main__':
     # call your train function here
     freeze_support()
     train("data/training_dataset_joint", "data/validation_dataset_joint")
+'''

@@ -20,7 +20,7 @@ class BasicNet(nn.Module):
 
         self.hidden_dim_1 = config.dimensions[0]
         self.hidden_dim_2 = config.dimensions[1]
-        self.hidden_dim_3 = 2*self.hiddem_dim_2
+        self.hidden_dim_3 = 2*self.hidden_dim_2
         self.embed_dim = config.dimensions[2]
 
         self.activation_function = config.activation
