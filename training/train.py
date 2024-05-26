@@ -4,16 +4,38 @@ import torch
 from torch.utils.data import DataLoader
 from model.basic_net import BasicNet
 from preprocessing.dataset import TranslationDataset
+from multiprocessing import freeze_support
+
+def _count_correct_predictions(pred, L):
+    correct_predictions = 0
+    for p, l in zip(torch.argmax(pred,dim=1),L):
+        if p == l:
+           correct_predictions += 1
+        #print(p, l)
+    return correct_predictions
+
+def _count_correct_predictions_v(pred, L):
+    correct_predictions = 0
+    i = 0
+    for p, l in zip(torch.argmax(pred,dim=1),L):
+        if p == l:
+            correct_predictions += 1
+        if i < 15:    
+            print(p, l)
+        else:
+            break
+        i+=1
+            
 
 
-def train(train_path: str, validation_path: str, max_epochs=200, batch_size=200,
-          shuffle=False, num_workers=0, lr=1e-4, eval_rate=100, half_learningrate = True):
+def train(train_path: str, validation_path: str, max_epochs=400, batch_size=200,
+          shuffle=True, num_workers=0, lr=1e-3, eval_rate=1000000, half_learningrate = True):
     """
     TODO
     - add tensorboard
     - do eval
     - add checkpoints for saving the model
-    - half learning rate if perfomance stagenates on evaluation set
+    - optinally half learning rate if perfomance stagenates on evaluation set
     """
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -44,49 +66,76 @@ def train(train_path: str, validation_path: str, max_epochs=200, batch_size=200,
             L = L.to(device)
 
             optimizer.zero_grad()
-
             pred = model(S, T)
-
             loss = model.compute_loss(pred, L)
-
             loss.backward()
             optimizer.step()
 
             # keep track of metrics
             steps += 1
+            total_steps += 1
             total_loss += loss.item()
-            batch_correct_predictions = 0
-            for p, l in zip(torch.argmax(pred,dim=1),L):
-                if p == l:
-                    batch_correct_predictions += 1
-            
-            batch_accuracy = batch_correct_predictions / batch_size
+
+
+            # print batch metrics
+            batch_correct_predictions = _count_correct_predictions(pred, L)
+            true_batch_size = L.size(0)
+            batch_accuracy = batch_correct_predictions / true_batch_size
             batch_perplexity = torch.exp(loss)
 
-            print("batch_accuracy:" + str(batch_accuracy))
-            print("batch_perplexity:" + str(batch_perplexity.item()))
+            if steps % 1 == 0:
+                print("batch_accuracy:" + str(batch_accuracy))
+                print("batch_perplexity:" + str(batch_perplexity.item()))
+                print("epoch: " + str(epoch))
+                print("steps: " + str(steps))
+            else:
+                print("steps: " + str(steps) + " batch_accuracy: " + str(batch_accuracy))
 
-            # evaluate model every k updates
-            """ 
+            
+            # evaluate model every eval_rate updates
             if total_steps % eval_rate == 0:
                 model.eval()
+
+                total_validation_perplexity = 0
+                total_validation_correct_predictions = 0
+                total_number_of_validation_samples = 0
+
                 for S_v, T_v, L_v in validation_dataloader:
                     S_v = S_v.to(device)
                     T_v = T_v.to(device)
                     L_v = L_v.to(device)
 
+                    total_number_of_validation_samples += L_v.size(0)
                     with torch.no_grad():
                         pred_v = model(S_v, T_v)
-                        # do some eval
+
+                        total_validation_correct_predictions += _count_correct_predictions(pred_v, L_v)
+
+                        # compute loss without averaging 
+                        loss_v = model.compute_loss(pred_v, L_v, False)
+                        total_validation_perplexity += torch.exp(loss_v).item()
+                    
+                validation_accuracy = total_validation_correct_predictions / total_number_of_validation_samples
+                validation_perplexity = total_validation_perplexity / total_number_of_validation_samples
+                print()
+                print("Validation:")
+                print("Validation accuracy: " + str(validation_accuracy))
+                print("Validation perplexity: " + str(validation_perplexity))
+                print()
 
                 model.train()
-            """
+            
 
 
 
         # keep track of total metrics
-        total_steps += steps
         total_correct_predictions += batch_correct_predictions
         total_accuracy = total_correct_predictions / (total_steps*batch_size)
 
 
+
+if __name__ == '__main__':
+    # call your train function here
+    freeze_support()
+    train("data/training_dataset_joint", "data/validation_dataset_joint")
+    

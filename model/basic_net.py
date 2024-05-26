@@ -18,7 +18,7 @@ class BasicNet(nn.Module):
         #Hyper parameters
         embed_dim = 200
         hidden_dim_1 = 300 
-        hidden_dim_2 = 500
+        hidden_dim_2 = 300
 
         # embedding layers 
         self.source_embedding = nn.Embedding(source_dict_size, embed_dim)
@@ -41,7 +41,8 @@ class BasicNet(nn.Module):
         self.output_layer = nn.Linear(target_dict_size,target_dict_size)
 
         # Model's loss function
-        self.criterion = nn.CrossEntropyLoss()
+        self.loss_sum = nn.CrossEntropyLoss(reduction="sum")
+        self.loss_mean = nn.CrossEntropyLoss()
 
         #self.linear1 = linear.LinearLayer(batch_size,5,5,True)
 
@@ -85,11 +86,14 @@ class BasicNet(nn.Module):
 
 
 
-    def compute_loss(self, pred, label):
+    def compute_loss(self, pred, label, normalized = True):
         label = label.view(-1)
-        loss = self.criterion(pred, label)
-
+        if normalized:
+            loss = self.loss_mean(pred, label)
+        else:
+            loss = self.loss_sum(pred, label)
         return loss
+    
 
 
 
