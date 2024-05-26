@@ -13,14 +13,25 @@ class BasicNet(nn.Module):
         TODO: 
         - add Batch norm
         """
+        
         #Hyper parameters
         embed_size = 100
-        hidden_dim_1 = 100 
-        hidden_dim_2 = 200
+        hidden_dim_1 = 500 
+        hidden_dim_2 = 500
+        hidden_dim_3 = 2*hidden_dim_2
 
         # Model's loss function
         self.loss_sum = nn.CrossEntropyLoss(reduction="sum")
         self.loss_mean = nn.CrossEntropyLoss()
+
+        # batch Norm
+        """
+        self.bn_fc_target = nn.BatchNorm1d(hidden_dim_1)
+        self.bn_concat = nn.BatchNorm1d(hidden_dim_2)
+        self.bn_fc1 = nn.BatchNorm1d(hidden_dim_2)
+        self.bn_fc2 = nn.BatchNorm1d(hidden_dim_3)
+        self.bn_fc_source = nn.BatchNorm1d(hidden_dim_1)
+        """
 
         # embedding layers 
         self.source_embedding = nn.Embedding(source_dict_size, embed_size)
@@ -38,10 +49,10 @@ class BasicNet(nn.Module):
             self.fc1 = nn.Linear(hidden_dim_2, hidden_dim_2)
             
             # Fully Connected Layer 2 / Projection
-            self.fc2 = nn.Linear(hidden_dim_2, hidden_dim_2)
+            self.fc2 = nn.Linear(hidden_dim_2, hidden_dim_3)
 
             # Output layer
-            self.output_layer = nn.Linear(hidden_dim_2,target_dict_size)
+            self.output_layer = nn.Linear(hidden_dim_3,target_dict_size)
         else:
             # Fully connected source and target layers
             self.fc_source = LinearLayer(batch_size,embed_size, hidden_dim_1)
@@ -75,7 +86,6 @@ class BasicNet(nn.Module):
         tgt_fc = self.fc_target(tgt_embedded)
         tgt_fc = F.relu(tgt_fc)
         
-
         # Concatenate source and target representations
         # join at feature dimension
         concat = self.concat(torch.cat((src_fc, tgt_fc), dim=1))
@@ -114,18 +124,12 @@ class BasicNet(nn.Module):
 
 
     def print_structure(self):
-        """
-        TODO:
-        vor Beginn des Trainings die Gesamtzahl der trainierbaren Parameter sowie die ver-
-        wendeten shapes von allen verwendeten Tensoren (also die Dimensionalität deren Aus-
-        gabe) zusammen mit dem entsprechenden Namen der Layer auszugeben und damit
-        die Netzwerkstruktur deutlich machen.
+        print("total number of trainable parameters: " + str(sum(p.numel() for p in self.parameters() if p.requires_grad)))
+        print("Layers:")
+        for name, module in self.named_children():
+            if not isinstance(module, nn.CrossEntropyLoss):
+                print(f"{name}: {module}")
 
-        """
-
-        for i in self.named_children():
-            print(i)
-        print()
 
 
 

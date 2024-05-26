@@ -16,12 +16,11 @@ def _count_correct_predictions(pred, L):
 
 
 def train(train_path: str, validation_path: str, max_epochs=400, batch_size=200,
-          shuffle=True, num_workers=0, lr=1e-3, eval_rate=100, half_learningrate = True):
+          shuffle=True, num_workers=0, lr=0.0005, eval_rate=100, half_learningrate = True):
     """
     TODO
     - add tensorboard
     - add checkpoints for saving the model
-    - optinally half learning rate if perfomance stagenates on evaluation set
     """
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -30,6 +29,7 @@ def train(train_path: str, validation_path: str, max_epochs=400, batch_size=200,
     train_set = TranslationDataset.load(train_path)
     train_dataloader = DataLoader(train_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
     print("number of Batches: " + str(len(train_dataloader)))
+    print("Batches Size: " + str(batch_size))
 
     validation_set = TranslationDataset.load(validation_path)
     validation_dataloader = DataLoader(validation_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
@@ -39,12 +39,10 @@ def train(train_path: str, validation_path: str, max_epochs=400, batch_size=200,
 
     model.print_structure()
 
-    total_loss = 0
     total_steps = 0
-    total_correct_predictions = 0
-
     previous_validation_perplexity = 0
 
+    print("\n        Starting Training: \n")
     for epoch in range(max_epochs):
         steps = 0
         for S, T, L in train_dataloader:
@@ -62,7 +60,7 @@ def train(train_path: str, validation_path: str, max_epochs=400, batch_size=200,
             # keep track of metrics
             steps += 1
             total_steps += 1
-            total_loss += loss.item()
+
 
 
             # print batch metrics
@@ -76,6 +74,7 @@ def train(train_path: str, validation_path: str, max_epochs=400, batch_size=200,
                 print("batch_perplexity:" + str(batch_perplexity.item()))
                 print("epoch: " + str(epoch))
                 print("steps: " + str(steps))
+                print()
             
             # evaluate model every eval_rate updates
             if total_steps % eval_rate == 0:
@@ -120,13 +119,6 @@ def train(train_path: str, validation_path: str, max_epochs=400, batch_size=200,
                 model.train()
 
                 
-            
-
-
-
-        # keep track of total metrics
-        total_correct_predictions += batch_correct_predictions
-        total_accuracy = total_correct_predictions / (total_steps*batch_size)
 
 
 
