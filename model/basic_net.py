@@ -65,22 +65,22 @@ class BasicNet(nn.Module):
 
         # Fully connected layers
         src_fc = self.fc_source(src_embedded)
-        src_fc = F.relu(src_fc)
+        src_fc = self.activation_function(src_fc)
         tgt_fc = self.fc_target(tgt_embedded)
-        tgt_fc = F.relu(tgt_fc)
+        tgt_fc = self.activation_function(tgt_fc)
         
 
         # Concatenate source and target representations
         # join at feature dimension
         concat = self.concat(torch.cat((src_fc, tgt_fc), dim=1))
-        concat = F.relu(concat)
+        concat = self.activation_function(concat)
 
         # Fully connected layers
         fc1_output = self.fc1(concat)
-        fc1_output = F.relu(fc1_output)
+        fc1_output = self.activation_function(fc1_output)
 
         fc2_output = self.fc2(fc1_output)
-        fc2_output = F.relu(fc2_output)
+        fc2_output = self.activation_function(fc2_output)
 
         # Output layer with softmax activation
         output = self.output_layer(fc2_output)

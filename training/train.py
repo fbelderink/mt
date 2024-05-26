@@ -8,8 +8,8 @@ from utils.hyperparameters import Hyperparameters
 from datetime import datetime
 from pathlib import Path
 
-def train(train_path: str, validation_path: str, config: Hyperparameters, max_epochs=200, batch_size=200,
-          shuffle=False, num_workers=0, lr=1e-4, eval_rate=100, half_learningrate = True):
+def train(train_path: str, validation_path: str, config: Hyperparameters, max_epochs=200,
+          shuffle=False, num_workers=0, eval_rate=100, half_learningrate = True):
     """
     TODO
     - add tensorboard
@@ -17,6 +17,8 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
     - add checkpoints for saving the model
     - half learning rate if perfomance stagenates on evaluation set
     """
+    lr = config.learning_rate
+    batch_size = config.batch_size
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f"training on {device}")
@@ -27,7 +29,7 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
 
    # validation_set = TranslationDataset.load(validation_path)
    # validation_dataloader = DataLoader(validation_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
-    model =  BasicNet(batch_size,train_set.get_source_dict_size(),train_set.get_target_dict_size(),config).to(device)
+    model = BasicNet(batch_size,train_set.get_source_dict_size(),train_set.get_target_dict_size(),config).to(device)
 
     if(config.saved_model != ""):
         model.load_state_dict(torch.load(config.saved_model))
@@ -66,7 +68,7 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
             time = datetime.today().strftime('%H_%M_%S')
 
             Path(f"training/checkpoints/{date}").mkdir(exist_ok=True)
-            torch.save(model.state_dict(), f"training/checkpoints/{date}/{time}")
+            torch.save(model.state_dict(), f"training/checkpoints/{date}/{time}.pth")
             epoch_count = 0
         steps = 0
 
@@ -77,7 +79,7 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
                 date = datetime.today().strftime('%d-%m-%Y')
                 time = datetime.today().strftime('%H_%M_%S')
                 Path(f"training/checkpoints/{date}").mkdir(exist_ok=True)
-                torch.save(model.state_dict(), f"training/checkpoints/{date}/{time}")
+                torch.save(model.state_dict(), f"training/checkpoints/{date}/{time}.pth")
                 batch_count = 0
 
 

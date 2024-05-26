@@ -3,9 +3,9 @@ dimensions:
   hidden2: 500
   embed_dim: 200
 activation_function: "relu"
-optimizer: "SGD"
+optimizer: "Adam"
 learning_rate: 0.001
 use_custom_linear_layer: False
 batch_size: 200
-checkpoints_per_epoch: 1
-load_model_path: ""
+checkpoints_per_epoch: 0
+load_model_path: "training/checkpoints/26-05-2024/18_37_11"
