@@ -41,7 +41,7 @@ class BasicNet(nn.Module):
         self.fc_target = nn.Linear(self.embed_dim * window_size, self.hidden_dim_1)
 
         # Fully Connected Layer 1
-        self.fc1 = nn.Linear(self.hidden_dim_2, self.hidden_dim_2)
+        self.fc1 = nn.Linear(2 * self.hidden_dim_1, self.hidden_dim_2)
 
         # Fully Connected Layer 2 / Projection
         self.fc2 = nn.Linear(self.hidden_dim_2, target_dict_size)
@@ -72,6 +72,9 @@ class BasicNet(nn.Module):
         # embedding
         src_embedded = self.source_embedding(S)
         tgt_embedded = self.target_embedding(T)
+
+        src_embedded = torch.flatten(src_embedded, start_dim=1)
+        tgt_embedded = torch.flatten(tgt_embedded, start_dim=1)
 
         # Fully connected layers
         src_fc = self.fc_source(src_embedded)
