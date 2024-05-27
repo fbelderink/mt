@@ -33,15 +33,15 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
     validation_set: TranslationDataset = TranslationDataset.load(validation_path)
     validation_dataloader = DataLoader(validation_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
 
-    model = BasicNet(batch_size, train_set.get_source_dict_size(), train_set.get_target_dict_size(), config,
+    model = BasicNet(train_set.get_source_dict_size(), train_set.get_target_dict_size(), config,
                      window_size=train_set.get_window_size()).to(device)
 
     if config.saved_model != "":
         model.load_state_dict(torch.load(config.saved_model))
 
     optimizer = config.optimizer(model.parameters(), lr=lr)
-    S, T = list(train_dataloader)[0][0], list(train_dataloader)[0][1]
-    model.print_structure(S,T)
+
+    model.print_structure()
 
     total_steps = 0
     previous_validation_perplexity = 0

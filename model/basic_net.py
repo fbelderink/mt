@@ -6,23 +6,21 @@ from utils.hyperparameters import Hyperparameters
 
 
 class BasicNet(nn.Module):
-    def __init__(self, batch_size, source_dict_size, target_dict_size, config: Hyperparameters, window_size):
+    def __init__(self, source_dict_size, target_dict_size, config: Hyperparameters, window_size):
         super(BasicNet, self).__init__()
         """
         TODO: 
         - eigener Linear layer verwenden
         - add Batch norm
         """
-        #Hyper parameters
+        # hyperparameters
         self.hidden_dim_1 = config.dimensions[0]
         self.hidden_dim_2 = config.dimensions[1]
         self.embed_dim = config.dimensions[2]
 
         self.activation_function = config.activation
-        self.optimizer = config.optimizer
-        self.init_learning_rate = config.learning_rate
+
         self.use_custom_ll = config.use_custom_ll
-        self.batch_size = config.batch_size
 
         # LOSS
         self.loss_sum = nn.CrossEntropyLoss(reduction="sum")
@@ -37,10 +35,8 @@ class BasicNet(nn.Module):
         self.fc_source = nn.Linear(self.embed_dim * (2 * window_size + 1), self.hidden_dim_1)
         self.fc_source_bn = nn.BatchNorm1d(self.hidden_dim_1)
 
-
         self.fc_target = nn.Linear(self.embed_dim * window_size, self.hidden_dim_1)
         self.fc_target_bn = nn.BatchNorm1d(self.hidden_dim_1)
-
 
         # Fully Connected Layer 1
         self.fc1 = nn.Linear(2 * self.hidden_dim_1, self.hidden_dim_2)
@@ -99,11 +95,8 @@ class BasicNet(nn.Module):
         fc2_output = self.fc2_bn(fc2_output)
         fc2_output = self.activation_function(fc2_output)
 
-        # Output layer with softmax activation
+        # Output layer with softmax activation in nn.CrossEntropyLoss
         output = self.output_layer(fc2_output)
-
-        # print(output.shape)
-        # reshape output so that it has dimensions batch_size x target_vec_siz
 
         return output
 
@@ -122,16 +115,3 @@ class BasicNet(nn.Module):
         for name, module in self.named_children():
             if not isinstance(module, nn.CrossEntropyLoss):
                 print(f"{name}: {module}")
-
-
-# just for testing
-def _custom_cross(pred, label):
-    loss = 0
-    count = 0
-    for p, l in zip(pred, label):
-        count += 1
-        print("values: " + str(p[l]))
-
-        loss += -math.log(p[l])
-
-    return loss / count
