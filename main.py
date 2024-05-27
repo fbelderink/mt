@@ -21,10 +21,15 @@ if __name__ == "__main__":
 
     multi30k_de = load_data(args.hyps)
     multi30k_en = load_data(args.refs)
+
+    """
     with open("eval/dict_de.pkl", 'rb') as f:
         dict_de = pickle.load(f)
     with open("eval/dict_en.pkl", 'rb') as f:
         dict_en = pickle.load(f)
+    """
+
+    #generate dataset
     #generate_dataset(multi30k_de, multi30k_en, args.window_size, 7000, save_path='data/integrative_test.pt')
-    test_dataset_load('data/train7k.pt')
-    train.train("data/train7k.pt", "data/val7k.pt", Hyperparameters(ConfigLoader("utils/config.yaml").get_config()))
+    #test_dataset_load('data/integrative_test.pt')
+    train.train("data/train7k.pt", "data/val7k.pt", Hyperparameters(ConfigLoader("configs/config.yaml").get_config()))

@@ -54,3 +54,6 @@ def save_model(path: str, model: nn.Module):
 def load_model(path: str, model: nn.Module) -> nn.Module:
     model.load_state_dict(torch.load(path))
     return model
+
+def save_checkpoint():
+    pass
