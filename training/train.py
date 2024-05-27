@@ -18,23 +18,23 @@ def _count_correct_predictions(pred, L):
 
 
 def train(train_path: str, validation_path: str, config: Hyperparameters, max_epochs=100,
-          shuffle=True, num_workers=4, val_rate=100, window_size=2, train_eval_rate=10):
+          shuffle=True, num_workers=4, val_rate=100, train_eval_rate=10):
     lr = config.learning_rate
     batch_size = config.batch_size
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f"training on {device}")
 
-    train_set = TranslationDataset.load(train_path)
+    train_set: TranslationDataset = TranslationDataset.load(train_path)
     train_dataloader = DataLoader(train_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
     print("Number of Batches: " + str(len(train_dataloader)))
     print("Batch Size: " + str(batch_size))
 
-    validation_set = TranslationDataset.load(validation_path)
+    validation_set: TranslationDataset = TranslationDataset.load(validation_path)
     validation_dataloader = DataLoader(validation_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
 
     model = BasicNet(batch_size, train_set.get_source_dict_size(), train_set.get_target_dict_size(), config,
-                     window_size=window_size).to(device)
+                     window_size=train_set.get_window_size()).to(device)
 
     if config.saved_model != "":
         model.load_state_dict(torch.load(config.saved_model))

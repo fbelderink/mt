@@ -24,14 +24,12 @@ if __name__ == "__main__":
     multi30k_de = load_data(args.hyps)
     multi30k_en = load_data(args.refs)
 
-    """
-    with open("eval/dict_de.pkl", 'rb') as f:
-        dict_de = pickle.load(f)
-    with open("eval/dict_en.pkl", 'rb') as f:
-        dict_en = pickle.load(f)
-    """
+    dict_de = Dictionary.load("data/train_dict_de.pkl")
+    dict_en = Dictionary.load("data/train_dict_en.pkl")
 
     #generate dataset
-    #generate_dataset(multi30k_de, multi30k_en, args.window_size, 7000, save_path='data/train7k.pt')
+    #generate_dataset(multi30k_de, multi30k_en, args.window_size, 7000,
+    #                 save_path='data/val7k.pt', dict_de=dict_de, dict_en=dict_en)
     #test_dataset_load('data/train7k.pt')
-    train.train("data/train7k.pt", "data/val7k.pt", Hyperparameters(ConfigLoader("configs/config.yaml").get_config()))
+    train.train("data/train7k.pt", "data/val7k.pt",
+                Hyperparameters(ConfigLoader("configs/config.yaml").get_config()))
