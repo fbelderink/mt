@@ -30,6 +30,6 @@ if __name__ == "__main__":
     """
 
     #generate dataset
-    #generate_dataset(multi30k_de, multi30k_en, args.window_size, 7000, save_path='data/integrative_test.pt')
-    #test_dataset_load('data/integrative_test.pt')
+    #generate_dataset(multi30k_de, multi30k_en, args.window_size, 7000, save_path='data/train7k.pt')
+    #test_dataset_load('data/train7k.pt')
     train.train("data/train7k.pt", "data/val7k.pt", Hyperparameters(ConfigLoader("configs/config.yaml").get_config()))

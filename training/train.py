@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from multiprocessing import freeze_support
 
+
 # niedrigste perplexity: 12
 
 def _count_correct_predictions(pred, L):
@@ -20,8 +21,7 @@ def _count_correct_predictions(pred, L):
 
 
 def train(train_path: str, validation_path: str, config: Hyperparameters, max_epochs=200,
-          shuffle=True, num_workers=4, eval_rate=2094,  window_size=2):
-
+          shuffle=True, num_workers=4, eval_rate=2094, window_size=2):
     lr = config.learning_rate
     batch_size = config.batch_size
 
@@ -36,7 +36,8 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
     validation_set = TranslationDataset.load(validation_path)
     validation_dataloader = DataLoader(validation_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
 
-    model = BasicNet(batch_size, train_set.get_source_dict_size(), train_set.get_target_dict_size(), config, window_size=window_size).to(device)
+    model = BasicNet(batch_size, train_set.get_source_dict_size(), train_set.get_target_dict_size(), config,
+                     window_size=window_size).to(device)
 
     if config.saved_model != "":
         model.load_state_dict(torch.load(config.saved_model))
@@ -91,9 +92,6 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
 
             S = S.to(device)
             T = T.to(device)
-
-            #L = L.long()
-
             L = L.to(device)
 
             optimizer.zero_grad()
@@ -129,7 +127,6 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
             if total_steps % eval_rate == 0:
                 model.eval()
 
-                #total_validation_perplexity = 0
                 summed_cross_entropy = 0
                 total_validation_correct_predictions = 0
                 total_number_of_validation_samples = 0
@@ -168,7 +165,6 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
 
         if per_epoch:
             epoch_count += 1
-
 
 
 if __name__ == '__main__':
