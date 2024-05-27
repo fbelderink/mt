@@ -18,11 +18,14 @@ class BasicNet(nn.Module):
         self.hidden_dim_2 = config.dimensions[1]
         self.embed_dim = config.dimensions[2]
 
+
         self.activation_function = config.activation
         self.optimizer = config.optimizer
         self.init_learning_rate = config.learning_rate
         self.use_custom_ll = config.use_custom_ll
         self.batch_size = config.batch_size
+
+        self.output_shapes = []
 
         # LOSS
         self.loss_sum = nn.CrossEntropyLoss(reduction="sum")
@@ -59,6 +62,10 @@ class BasicNet(nn.Module):
 
             # Output layer
             self.output_layer = LinearLayer(target_dict_size, target_dict_size)
+
+
+
+
 
     def forward(self, S, T):
 
@@ -103,14 +110,63 @@ class BasicNet(nn.Module):
             loss = self.loss_sum(pred, label)
         return loss
 
-    def print_structure(self):
-        print("total number of trainable parameters: " + str(
-            sum(p.numel() for p in self.parameters() if p.requires_grad)))
+    def print_structure(self,S,T):
+        print("total number of trainable parameters: " + str(sum(p.numel() for p in self.parameters() if p.requires_grad)))
         print("Layers:")
+        self.get_shapes(S,T)
         for name, module in self.named_children():
             if not isinstance(module, nn.CrossEntropyLoss):
                 print(f"{name}: {module}")
 
+        for shape in self.output_shapes:
+            print(shape)
+
+    def get_shapes(self, S, T):
+
+        # embedding
+        src_embedded = self.source_embedding(S)
+        tgt_embedded = self.target_embedding(T)
+
+        self.output_shapes.append(src_embedded.shape)
+        self.output_shapes.append(tgt_embedded.shape)
+
+        src_embedded = torch.flatten(src_embedded, start_dim=1)
+        tgt_embedded = torch.flatten(tgt_embedded, start_dim=1)
+
+        self.output_shapes.append(src_embedded.shape)
+        self.output_shapes.append(tgt_embedded.shape)
+
+        # Fully connected layers
+        src_fc = self.fc_source(src_embedded)
+        src_fc = self.activation_function(src_fc)
+        tgt_fc = self.fc_target(tgt_embedded)
+        tgt_fc = self.activation_function(tgt_fc)
+
+        self.output_shapes.append(src_fc.shape)
+        self.output_shapes.append(tgt_fc.shape)
+
+        # Concatenate source and target representations
+        # join at feature dimension
+        concat = torch.cat((src_fc, tgt_fc), dim=1)
+        concat = self.activation_function(concat)
+
+        self.output_shapes.append(concat.shape)
+
+        # Fully connected layers
+        fc1_output = self.fc1(concat)
+        fc1_output = self.activation_function(fc1_output)
+
+        self.output_shapes.append(fc1_output.shape)
+
+        fc2_output = self.fc2(fc1_output)
+        fc2_output = self.activation_function(fc2_output)
+
+        self.output_shapes.append(fc2_output.shape)
+
+        # Output layer with softmax activation
+        output = self.output_layer(fc2_output)
+
+        self.output_shapes.append(output.shape)
 
 # just for testing
 def _custom_cross(pred, label):

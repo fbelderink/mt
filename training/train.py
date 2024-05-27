@@ -40,8 +40,8 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
         model.load_state_dict(torch.load(config.saved_model))
 
     optimizer = config.optimizer(model.parameters(), lr=lr)
-
-    model.print_structure()
+    S, T = list(train_dataloader)[0][0], list(train_dataloader)[0][1]
+    model.print_structure(S,T)
 
     total_steps = 0
     previous_validation_perplexity = 0
