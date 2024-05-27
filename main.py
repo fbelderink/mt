@@ -5,6 +5,8 @@ import training.train as train
 from utils.ConfigLoader import ConfigLoader
 from utils.hyperparameters import Hyperparameters
 import pickle
+
+
 def _parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 

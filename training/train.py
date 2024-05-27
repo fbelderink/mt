@@ -3,13 +3,9 @@ from torch.utils.data import DataLoader
 from model.basic_net import BasicNet
 from preprocessing.dataset import TranslationDataset
 from utils.hyperparameters import Hyperparameters
-from datetime import datetime
-from pathlib import Path
 from multiprocessing import freeze_support
 
 from utils.file_manipulation import save_checkpoint
-
-from torch.utils.tensorboard import SummaryWriter
 
 # niedrigste perplexity: 12
 
@@ -22,7 +18,7 @@ def _count_correct_predictions(pred, L):
 
 
 def train(train_path: str, validation_path: str, config: Hyperparameters, max_epochs=100,
-          shuffle=True, num_workers=4, eval_rate=100, window_size=2):
+          shuffle=True, num_workers=4, val_rate=100, window_size=2, train_eval_rate=10):
     lr = config.learning_rate
     batch_size = config.batch_size
 
@@ -31,8 +27,8 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
 
     train_set = TranslationDataset.load(train_path)
     train_dataloader = DataLoader(train_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
-    print("number of Batches: " + str(len(train_dataloader)))
-    print("Batches Size: " + str(batch_size))
+    print("Number of Batches: " + str(len(train_dataloader)))
+    print("Batch Size: " + str(batch_size))
 
     validation_set = TranslationDataset.load(validation_path)
     validation_dataloader = DataLoader(validation_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
@@ -47,8 +43,6 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
 
     model.print_structure()
 
-    writer = SummaryWriter()
-
     total_steps = 0
     previous_validation_perplexity = 0
     per_epoch = False
@@ -56,14 +50,17 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
     checkpoints_rate = config.checkpoints
 
     if 0 < checkpoints_rate <= 1:
+        # create checkpoints during epochs
         checkpoints_rate = 1 // checkpoints_rate
         per_epoch = True
         per_batch = False
     elif checkpoints_rate > 1:
+        # create checkpoints during batch
         per_batch = True
         per_epoch = False
 
     if checkpoints_rate == 0:
+        # no checkpoints
         per_batch = False
         per_epoch = False
 
@@ -106,12 +103,10 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
             batch_accuracy = batch_correct_predictions / true_batch_size
             batch_perplexity = torch.exp(loss)
 
-            #writer.add_scalar("loss/train", loss.item())
-
             if per_batch:
                 batch_count += 1
 
-            if steps % 10 == 0:
+            if steps % train_eval_rate == 0:
                 print("batch_accuracy:" + str(batch_accuracy))
                 print("batch_perplexity:" + str(batch_perplexity.item()))
                 print("epoch: " + str(epoch))
@@ -119,7 +114,7 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
                 print()
 
             # evaluate model every k updates
-            if total_steps % eval_rate == 0:
+            if total_steps % val_rate == 0:
                 model.eval()
 
                 total_val_loss = 0
@@ -160,9 +155,6 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
 
         if per_epoch:
             epoch_count += 1
-
-    writer.flush()
-    writer.close()
 
 
 if __name__ == '__main__':
