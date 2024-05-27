@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from multiprocessing import freeze_support
 
+# niedrigste perplexity: 12
 
 def _count_correct_predictions(pred, L):
     correct_predictions = 0
@@ -19,7 +20,7 @@ def _count_correct_predictions(pred, L):
 
 
 def train(train_path: str, validation_path: str, config: Hyperparameters, max_epochs=200,
-          shuffle=True, num_workers=4, eval_rate=2094, half_learningrate=True, window_size=2):
+          shuffle=True, num_workers=4, eval_rate=2094,  window_size=2):
 
     lr = config.learning_rate
     batch_size = config.batch_size
@@ -79,6 +80,7 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
 
         if per_batch:
             batch_count = -(len(train_dataloader) % checkpoints_rate)
+
         for S, T, L in train_dataloader:
             if per_batch and batch_count == (len(train_dataloader) // checkpoints_rate):
                 date = datetime.today().strftime('%d-%m-%Y')
@@ -164,8 +166,9 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
 
                 model.train()
 
-            if per_epoch:
-                epoch_count += 1
+        if per_epoch:
+            epoch_count += 1
+
 
 
 if __name__ == '__main__':
