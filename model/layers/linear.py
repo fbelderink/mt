@@ -7,10 +7,12 @@ class LinearLayer(nn.Module):
         super().__init__()
 
         self.has_bias = bias
-        self.W = nn.Parameter(torch.rand(in_features, out_features))
+        self.W = nn.Parameter(torch.empty(in_features, out_features))
+
+        nn.init.xavier_normal_(self.W)
 
         if bias:
-            self.bias = nn.Parameter(torch.rand(out_features))
+            self.bias = nn.Parameter(torch.zeros(out_features))
 
     def forward(self, x):
         output = torch.matmul(x, self.W)

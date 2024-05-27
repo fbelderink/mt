@@ -1,5 +1,3 @@
-import math
-
 import torch
 from torch.utils.data import DataLoader
 from model.basic_net import BasicNet
@@ -9,6 +7,9 @@ from datetime import datetime
 from pathlib import Path
 from multiprocessing import freeze_support
 
+from utils.file_manipulation import save_checkpoint
+
+from torch.utils.tensorboard import SummaryWriter
 
 # niedrigste perplexity: 12
 
@@ -20,8 +21,8 @@ def _count_correct_predictions(pred, L):
     return correct_predictions
 
 
-def train(train_path: str, validation_path: str, config: Hyperparameters, max_epochs=200,
-          shuffle=True, num_workers=4, eval_rate=2094, window_size=2):
+def train(train_path: str, validation_path: str, config: Hyperparameters, max_epochs=100,
+          shuffle=True, num_workers=4, eval_rate=100, window_size=2):
     lr = config.learning_rate
     batch_size = config.batch_size
 
@@ -46,6 +47,8 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
 
     model.print_structure()
 
+    writer = SummaryWriter()
+
     total_steps = 0
     previous_validation_perplexity = 0
     per_epoch = False
@@ -63,31 +66,21 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
     if checkpoints_rate == 0:
         per_batch = False
         per_epoch = False
-    current_checkpoint = 0
 
-    if per_epoch:
-        epoch_count = -(max_epochs % checkpoints_rate)
+    epoch_count = -(max_epochs % checkpoints_rate)
 
     print("\n        Starting Training: \n")
     for epoch in range(max_epochs):
         if per_epoch and epoch_count == checkpoints_rate:
-            date = datetime.today().strftime('%d-%m-%Y')
-            time = datetime.today().strftime('%H_%M_%S')
-
-            Path(f"eval/checkpoints/{date}").mkdir(exist_ok=True)
-            torch.save(model.state_dict(), f"eval/checkpoints/{date}/{time}.pth")
+            save_checkpoint(model)
             epoch_count = 0
         steps = 0
 
-        if per_batch:
-            batch_count = -(len(train_dataloader) % checkpoints_rate)
+        batch_count = -(len(train_dataloader) % checkpoints_rate)
 
         for S, T, L in train_dataloader:
             if per_batch and batch_count == (len(train_dataloader) // checkpoints_rate):
-                date = datetime.today().strftime('%d-%m-%Y')
-                time = datetime.today().strftime('%H_%M_%S')
-                Path(f"eval/checkpoints/{date}").mkdir(exist_ok=True)
-                torch.save(model.state_dict(), f"eval/checkpoints/{date}/{time}.pth")
+                save_checkpoint(model)
                 batch_count = 0
 
             S = S.to(device)
@@ -113,6 +106,8 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
             batch_accuracy = batch_correct_predictions / true_batch_size
             batch_perplexity = torch.exp(loss)
 
+            #writer.add_scalar("loss/train", loss.item())
+
             if per_batch:
                 batch_count += 1
 
@@ -122,14 +117,14 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
                 print("epoch: " + str(epoch))
                 print("steps: " + str(steps))
                 print()
-            # evaluate model every k updates
 
+            # evaluate model every k updates
             if total_steps % eval_rate == 0:
                 model.eval()
 
-                summed_cross_entropy = 0
-                total_validation_correct_predictions = 0
-                total_number_of_validation_samples = 0
+                total_val_loss = 0
+                total_val_correct_predictions = 0
+                total_val_samples = 0
 
                 # VALIDATION
                 for S_v, T_v, L_v in validation_dataloader:
@@ -137,34 +132,37 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
                     T_v = T_v.to(device)
                     L_v = L_v.to(device)
 
-                    total_number_of_validation_samples += L_v.size(0)
+                    total_val_samples += L_v.size(0)
 
                     pred_v = model(S_v, T_v)
 
-                    total_validation_correct_predictions += _count_correct_predictions(pred_v, L_v)
+                    total_val_correct_predictions += _count_correct_predictions(pred_v, L_v)
 
                     # compute cross entropy without averaging
-                    summed_cross_entropy += model.compute_loss(pred_v, L_v, False)
+                    total_val_loss += model.compute_loss(pred_v, L_v, False)
 
-                    validation_accuracy = total_validation_correct_predictions / total_number_of_validation_samples
-                    validation_perplexity = torch.exp(summed_cross_entropy / total_number_of_validation_samples).item()
-                    print()
-                    print("Validation:")
-                    print("Validation accuracy: " + str(validation_accuracy))
-                    print("Validation perplexity: " + str(validation_perplexity))
+                validation_accuracy = total_val_correct_predictions / total_val_samples
+                validation_perplexity = torch.exp(total_val_loss / total_val_samples).item()
+                print()
+                print("Validation:")
+                print("Validation accuracy: " + str(validation_accuracy))
+                print("Validation perplexity: " + str(validation_perplexity))
 
-                    if previous_validation_perplexity != 0 and previous_validation_perplexity <= validation_perplexity:
-                        for param_group in optimizer.param_groups:
-                            param_group['lr'] = param_group['lr'] / 2
-                        print("learning rate halfed; new learning rate: " + str(optimizer.param_groups[0]['lr']))
+                if config.half_lr and 0 < previous_validation_perplexity <= validation_perplexity:
+                    for param_group in optimizer.param_groups:
+                        param_group['lr'] = param_group['lr'] / 2
+                    print("learning rate halfed; new learning rate: " + str(optimizer.param_groups[0]['lr']))
 
-                    previous_validation_perplexity = validation_perplexity
-                    print()
+                previous_validation_perplexity = validation_perplexity
+                print()
 
                 model.train()
 
         if per_epoch:
             epoch_count += 1
+
+    writer.flush()
+    writer.close()
 
 
 if __name__ == '__main__':

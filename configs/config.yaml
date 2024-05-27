@@ -4,8 +4,9 @@ dimensions:
   embed_dim: 200
 activation_function: "relu"
 optimizer: "Adam"
-learning_rate: 0.1
-use_custom_linear_layer: False
+learning_rate: 0.001
+use_custom_linear_layer: True
 batch_size: 200
 checkpoints_per_epoch: 5
 load_model_path: ""
+half_lr: False
