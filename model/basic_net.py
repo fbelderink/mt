@@ -41,7 +41,7 @@ class BasicNet(nn.Module):
         self.fc_target = nn.Linear(self.embed_dim * window_size, self.hidden_dim_1)
 
         # Fully Connected Layer 1
-        self.fc1 = nn.Linear(2 * self.hidden_dim_1, self.hidden_dim_2)
+        self.fc1 = nn.Linear(2*self.hidden_dim_1, self.hidden_dim_2)
 
         # Fully Connected Layer 2 / Projection
         self.fc2 = nn.Linear(self.hidden_dim_2, target_dict_size)

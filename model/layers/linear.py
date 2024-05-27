@@ -7,7 +7,9 @@ class LinearLayer(nn.Module):
         super().__init__()
 
         self.has_bias = bias
-        self.W = nn.Parameter(torch.rand(batch_size, in_features, out_features))
+        rand_weight_matrix = torch.rand(in_features, out_features)
+        rand_weight_tensor = torch.stack([rand_weight_matrix] * batch_size, dim=0)
+        self.W = nn.Parameter(rand_weight_tensor)
 
         if bias:
             self.bias = nn.Parameter(torch.zeros(batch_size, out_features))
