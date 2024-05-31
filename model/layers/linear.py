@@ -3,18 +3,25 @@ import torch.nn as nn
 
 
 class LinearLayer(nn.Module):
-    def __init__(self, batch_size: int, in_features: int, out_features: int, bias=True):
+    def __init__(self, in_features: int, out_features: int, bias=False):
         super().__init__()
 
         self.has_bias = bias
+        self.W = nn.Parameter(torch.empty(in_features, out_features))
 
-        self.W = nn.Parameter(torch.rand(batch_size, out_features, in_features))
+        nn.init.xavier_normal_(self.W)
 
         if bias:
-            self.bias = nn.Parameter(torch.zeros(batch_size, out_features))
+            self.bias = nn.Parameter(torch.zeros(out_features))
 
     def forward(self, x):
-        if self.has_bias:
-            return torch.add(torch.bmm(self.W, x), self.bias)
+        output = torch.matmul(x, self.W)
 
-        return torch.bmm(self.W, x)
+        if self.has_bias:
+            output += self.bias
+
+        return output
+
+
+
+

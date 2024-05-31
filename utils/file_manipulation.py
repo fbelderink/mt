@@ -1,6 +1,9 @@
 from typing import List, Union
 import torch
 import torch.nn as nn
+from datetime import datetime
+from pathlib import Path
+import os
 
 
 def load_data(path: str,
@@ -54,3 +57,11 @@ def save_model(path: str, model: nn.Module):
 def load_model(path: str, model: nn.Module) -> nn.Module:
     model.load_state_dict(torch.load(path))
     return model
+
+
+def save_checkpoint(model: nn.Module):
+    date = datetime.today().strftime('%d-%m-%Y')
+    time = datetime.today().strftime('%H_%M_%S')
+
+    Path(f"eval/checkpoints/{date}").mkdir(exist_ok=True)
+    torch.save(model.state_dict(), f"eval/checkpoints/{date}/{time}.pth")

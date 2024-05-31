@@ -34,7 +34,7 @@ class Dictionary:
         if index in self:
             return self._idx_to_word_vocab[index]
 
-        return self._idx_to_word_vocab[0] # return UNK token
+        return self._idx_to_word_vocab[0]  # return UNK token
 
     def get_index_of_string(self, string: str):
         # Get the index of a given string in the dictionary
@@ -85,7 +85,11 @@ class Dictionary:
             new_data.append(new_sentence)
         return new_data
 
+    @staticmethod
+    def load(path):
+        with open(path, "rb") as f:
+            return pickle.load(f)
+
     def save(self, path):
         with open(path, 'wb') as f:
             pickle.dump(self, f, pickle.HIGHEST_PROTOCOL)
-
