@@ -8,7 +8,6 @@ from typing import List
 class TranslationDataset(Dataset):
     def __init__(self, source_data: List[List[str]], target_data: List[List[str]],
                  source_dict: Dictionary, target_dict: Dictionary, window_size: int):
-
         filtered_source_data = source_dict.apply_vocabulary_to_text(source_data, bpe_performed=False)
         filtered_target_data = target_dict.apply_vocabulary_to_text(target_data, bpe_performed=False)
 
@@ -19,8 +18,10 @@ class TranslationDataset(Dataset):
         self._target_window_mat = torch.from_numpy(T)
         self._labels = torch.from_numpy(L)
 
-        self.source_dict_size = len(source_dict)
-        self.target_dict_size = len(target_dict)
+        self._source_dict_size = len(source_dict)
+        self._target_dict_size = len(target_dict)
+
+        self._window_size = window_size
 
     def __len__(self):
         return self._source_window_mat.shape[0]
@@ -36,7 +37,10 @@ class TranslationDataset(Dataset):
         torch.save(self, path)
 
     def get_source_dict_size(self):
-        return self.source_dict_size
-    
+        return self._source_dict_size
+
     def get_target_dict_size(self):
-        return self.target_dict_size
+        return self._target_dict_size
+
+    def get_window_size(self):
+        return self._window_size

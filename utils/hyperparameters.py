@@ -1,4 +1,6 @@
 import torch
+
+
 class Hyperparameters:
     def __init__(self, config):
         self.config = config
@@ -10,3 +12,4 @@ class Hyperparameters:
         self.batch_size = config["batch_size"]
         self.checkpoints = config["checkpoints_per_epoch"]
         self.saved_model = config["load_model_path"]
+        self.half_lr = config["half_lr"]
