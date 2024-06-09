@@ -30,7 +30,7 @@ class Dictionary:
         return False
 
     def get_string_at_index(self, index: int):
-        # Retrieve the string at a given index in the dictionary or raise a KeyError
+        # Retrieve the string at a given index in the dictionary or return UNK
         if index in self:
             return self._idx_to_word_vocab[index]
 

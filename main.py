@@ -21,11 +21,11 @@ def _parse_arguments() -> argparse.Namespace:
 if __name__ == "__main__":
     args = _parse_arguments()
 
-    multi30k_de = load_data(args.hyps)
-    multi30k_en = load_data(args.refs)
+    #multi30k_de = load_data(args.hyps)
+    #multi30k_en = load_data(args.refs)
 
-    dict_de = Dictionary.load("data/train_dict_de.pkl")
-    dict_en = Dictionary.load("data/train_dict_en.pkl")
+    #dict_de = Dictionary.load("data/train_dict_de.pkl")
+    #dict_en = Dictionary.load("data/train_dict_en.pkl")
 
     #generate dataset
     #generate_dataset(multi30k_de, multi30k_en, args.window_size, 7000,
