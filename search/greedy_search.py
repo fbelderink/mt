@@ -43,7 +43,7 @@ def translate(model_path: str, source_data_path: str, target_data_path: str,
         S = torch.from_numpy(get_source_idx(S)) # replace tokens with corresponding indices
 
         # contains the entry needed to translate the next sentence 
-        t_list = ['<s>', '<s>'] 
+        t_list = ['<s>'] * window_size
 
         get_target_idx = np.vectorize(target_dict.get_index_of_string)
         t_tensor = torch.from_numpy(get_target_idx(t_list)) # replace tokens with corresponding indices
