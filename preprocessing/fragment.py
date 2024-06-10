@@ -139,6 +139,16 @@ def _get_source_window_matrix(source_data: List[List[str]], target_data: List[Li
     return np.vstack(word_matrices)
 
 
+def create_source_window_matrix(source_data: List[str], source_dict: Dictionary, window_size: int, target_length: int):
+
+    # calculate matrices for complete data
+    source_window_mat = _get_source_window_matrix([source_data], [['<UNK>'] * target_length], window_size)
+
+    get_source_idx = np.vectorize(source_dict.get_index_of_string)
+
+    return get_source_idx(source_window_mat)
+
+
 def fragment_data(source_data: List[List[str]], target_data: List[List[str]], window_size: int) -> tuple:
     # add end of sentence symbols to sentences
     target_data_with_eos = _append_eos_to_sentences(target_data)
@@ -162,4 +172,3 @@ def fragment_data_to_indices(source_data: List[List[str]],
     get_target_idx = np.vectorize(target_dict.get_index_of_string)
 
     return get_source_idx(S), get_target_idx(T), get_target_idx(L)
-

@@ -41,4 +41,4 @@ if __name__ == "__main__":
 
     model = torch.load("eval/checkpoints/10-06-2024/16_00_38.pth")
 
-    test_beam_search(model, multi30k_de, multi30k_en, dict_de, dict_en, 3)
+    test_beam_search(model, multi30k_de[0:100], dict_de, dict_en, 3, args.window_size)

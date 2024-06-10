@@ -50,6 +50,16 @@ def save_batches(path: str, batches: List[tuple]):
     out_file.close()
 
 
+def save_n_best_translations(path: str, translations: List[List[List[str]]]):
+    out_file = open(path, 'w', encoding='utf-8')
+    for sentences in translations:
+        str_sentences = [" ".join(sentence) for sentence in sentences]
+        line = ";".join(str_sentences)
+        out_file.write(line + '\n')
+
+    out_file.close()
+
+
 def save_model(path: str, model: nn.Module):
     torch.save(model.state_dict(), path)
 
