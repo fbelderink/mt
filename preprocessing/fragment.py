@@ -131,7 +131,7 @@ def _get_source_window_matrix(source_data: List[List[str]], target_data: List[Li
             # calculate alignment of index with given target and source sentence length
             b_i = _get_alignment(i, len(target_sentence), len(source_sentence))
             # get (padded) subsentence considering alignment and fill content into matrix row
-            word_matrix[i, :] = _get_padded_sentence(source_sentence, (b_i - window_size, b_i + window_size))
+            word_matrix[i, :] = _get_padded_sentence(source_sentence, (b_i - window_size + 1, b_i + window_size + 1))
 
         word_matrices.append(word_matrix)
 
