@@ -98,6 +98,9 @@ class BasicNet(nn.Module):
         # Output layer with softmax activation in nn.CrossEntropyLoss
         output = self.output_layer(fc2_output)
 
+        if not self.training:
+            output = torch.nn.functional.log_softmax(output, dim=1)
+
         return output
 
     def compute_loss(self, pred, label, normalized=True):

@@ -36,8 +36,9 @@ if __name__ == "__main__":
     #                 dict_de=dict_de, dict_en=dict_en, save_path='data/val7k.pt')
     #test_dataset_load('data/train7k.pt')
 
-    train.train("data/train7k.pt", "data/val7k.pt",
-                Hyperparameters(ConfigLoader("configs/config.yaml").get_config()))
+    #train.train("data/train7k.pt", "data/val7k.pt",
+    #            Hyperparameters(ConfigLoader("configs/config.yaml").get_config()))
 
+    model = torch.load("eval/checkpoints/10-06-2024/16_00_38.pth")
 
-    #test_beam_search()
+    test_beam_search(model, multi30k_de, multi30k_en, dict_de, dict_en, 3)
