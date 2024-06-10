@@ -7,8 +7,11 @@ from typing import List
 from preprocessing.fragment import create_source_window_matrix
 
 
-def translate(model: nn.Module, source_data: List[List[str]],
-              source_dict: Dictionary, target_dict: Dictionary, window_size: int):
+def translate(model: nn.Module,
+              source_data: List[List[str]],
+              source_dict: Dictionary,
+              target_dict: Dictionary,
+              window_size: int):
     # TODO experiment with bigger window size
 
     # TODO
