@@ -7,8 +7,12 @@ from preprocessing.fragment import create_source_window_matrix
 from typing import List
 
 
-def translate(model: nn.Module, source_data: List[List[str]], source_dict: Dictionary, target_dict: Dictionary,
-              beam_size: int, window_size: int):
+def translate(model: nn.Module,
+              source_data: List[List[str]],
+              source_dict: Dictionary,
+              target_dict: Dictionary,
+              beam_size: int,
+              window_size: int):
     model.eval()
 
     source_data = source_dict.apply_vocabulary_to_text(source_data, bpe_performed=False)
