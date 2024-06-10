@@ -3,95 +3,51 @@ import sys
 sys.path.append('..')
 
 from metrics.metrics import BLEU
-from utils.file_manipulation import load_data, load_model
+from utils.file_manipulation import load_data
 import torch
-from model.basic_net import BasicNet
-from preprocessing.dataset import TranslationDataset
 from utils.ConfigLoader import Hyperparameters
 from preprocessing.dictionary import Dictionary
-from preprocessing.BPE import generate_bpe, perform_bpe
+from preprocessing.BPE import generate_bpe
+from statistics import mean
+import argparse
+from search.beam_search import translate as beam_translate
+from search.greedy_search import translate as greedy_translate
 
 
-def get_data_dicts(data_path: str,
-                   source_dict_path: str,
-                   target_dict_path: str,
-                   bpe_operations: int) -> (Dictionary, Dictionary):
-    """
-    Get the dictionaries for the source and target languages.
-    Args:
-        data_path:
-        source_dict_path:
-        target_dict_path:
-        bpe_operations:
-
-    Returns: The tuple of dictionaries.
-    """
-    if source_dict_path:
-        source_dict = Dictionary.load(source_dict_path)
-    else:
-        source_data = load_data(data_path)
-        operations = generate_bpe(source_data, bpe_operations)
-        source_dict = Dictionary(source_data, operations)
-
-    if target_dict_path:
-        target_dict = Dictionary.load(target_dict_path)
-    else:
-        target_data = load_data(data_path)
-        operations = generate_bpe(target_data, bpe_operations)
-        target_dict = Dictionary(target_data, operations)
-
-    return source_dict, target_dict
-
+def parse_args():
+    parser = argparse.ArgumentParser(description='Translate a given source language to a target language.')
+    parser.add_argument( '--model_path', type=str, help='The path to the model.')
+    parser.add_argument( '--source_data_path', type=str, help='The path to the source data.')
+    parser.add_argument( '--target_data_path', type=str, help='The path to the target data.')
+    parser.add_argument('--source_dict_path', type=str, help='The path to the source dictionary.')
+    parser.add_argument('--target_dict_path', type=str, help='The path to the target dictionary.')
+    parser.add_argument('--config_path', type=str, help='The path to the configuration file.')
+    parser.add_argument('--beam_search', type=bool, help='Whether to use beam search.')
+    parser.add_argument('--out_hyps_path', type=str, help='The path to the output hypotheses.')
+    return parser.parse_args()
 
 def create_hyps(model_path: str,
-                data_path: str,
+                source_data_path: str,
+                target_data_path: str,
                 source_dict_path: str,
                 target_dict_path: str,
-                hyp_path: str,
-                config: Hyperparameters,
-                bpe_operations: int = 100,
-                window_size: int = 5,
-                device: str = 'cpu',
-                verbose: bool = False):
-    """
-    Create hypotheses using a model.
-    Args:
-    model_path: str, the path to the model.
-    data_path: str, the path to the data.
-    hyp_path: str, the path to save the hypotheses.
-    device: str, the device to run the model on.
-    verbose: bool, whether to print messages.
-    """
-    # set device, if wish can be fulfilled
-    device = set_device(device)
+                config_path: str,
+                beam_search: bool):
+    if beam_search:
+        beam_translate(torch.load(model_path),
+                       load_data(source_data_path),
+                       Dictionary.load(source_dict_path),
+                       Dictionary.load(target_dict_path),
+                       2,
+                       5)
 
-    # load dictionaries for both source and target languages
-    source_dict, target_dict = get_data_dicts(data_path,
-                                              source_dict_path,
-                                              target_dict_path,
-                                              bpe_operations)
-
-    # load the model
-    model = BasicNet(source_dict.get_size(),
-                     target_dict.get_size(),
-                     config,
-                     window_size).to(device)
-
-    # load the weights of the checkpoint
-    model = torch.load(model_path)
-
-    # set model to evaluation mode
-    model.eval()
-
-    # load the data
-    input_data = load_data(data_path)
-
-    # apply BPE to the input data
-    input_data = source_dict.apply_vocabulary_to_text(input_data)
-
-
-
-
+    else:
+        greedy_translate(model_path,
+                         source_data_path,
+                         target_data_path,
+                         Dictionary.load(source_dict_path),
+                         Dictionary.load(target_dict_path),
+                         Hyperparameters(config_path))
 
 
 def print_verbose(verbose: bool, message: str):
@@ -134,7 +90,18 @@ def calculate_bleu(ref_path: str, hyp_path: str) -> float:
 
 
 def main():
-    create_hyps(None, './data/val7k.pt', None, None, None )
+    args = parse_args()
+    create_hyps(args.model_path,
+                args.source_data_path,
+                args.target_data_path,
+                args.source_dict_path,
+                args.target_dict_path,
+                args.config_path,
+                args.beam_search)
+
+    # TODO: iterate over a dir of checkpoints and create a graph of BLEU scores
+    calculate_bleu(args.target_data_path,
+                   args.out_hyps_path)
 
 
 if __name__ == "__main__":
