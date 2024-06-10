@@ -8,5 +8,5 @@ learning_rate: 0.001
 use_custom_linear_layer: False
 batch_size: 200
 checkpoints_per_epoch: 5
-load_model_path: "eval/checkpoints/09-06-2024/18_01_21.pth"
+load_model_path: ""
 half_lr: True
