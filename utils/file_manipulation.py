@@ -64,4 +64,4 @@ def save_checkpoint(model: nn.Module):
     time = datetime.today().strftime('%H_%M_%S')
 
     Path(f"eval/checkpoints/{date}").mkdir(exist_ok=True)
-    torch.save(model.state_dict(), f"eval/checkpoints/{date}/{time}.pth")
+    torch.save(model, f"eval/checkpoints/{date}/{time}.pth")
