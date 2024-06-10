@@ -12,6 +12,7 @@ from statistics import mean
 import argparse
 from search.beam_search import translate as beam_translate
 from search.greedy_search import translate as greedy_translate
+from typing import List
 
 
 def parse_args():
@@ -23,6 +24,7 @@ def parse_args():
     parser.add_argument('--target_dict_path', type=str, help='The path to the target dictionary.')
     parser.add_argument('--config_path', type=str, help='The path to the configuration file.')
     parser.add_argument('--beam_search', type=bool, help='Whether to use beam search.')
+    parser.add_argument('--window_size', type=int, help='The window size for beam search.')
     parser.add_argument('--out_hyps_path', type=str, help='The path to the output hypotheses.')
     return parser.parse_args()
 
@@ -34,15 +36,15 @@ def create_hyps(model_path: str,
                 config_path: str,
                 beam_search: bool):
     if beam_search:
-        beam_translate(torch.load(model_path),
-                       load_data(source_data_path),
-                       Dictionary.load(source_dict_path),
-                       Dictionary.load(target_dict_path),
+        return beam_translate(torch.load(model_path),
+                              load_data(source_data_path),
+                              Dictionary.load(source_dict_path),
+                              Dictionary.load(target_dict_path),
                        2,
-                       5)
+                       2)
 
     else:
-        greedy_translate(model_path,
+        return greedy_translate(model_path,
                          source_data_path,
                          target_data_path,
                          Dictionary.load(source_dict_path),
@@ -76,32 +78,40 @@ def set_device(device: str) -> torch.device:
     return device
 
 
-def calculate_bleu(ref_path: str, hyp_path: str) -> float:
+def calculate_bleu(hyps: List[List[str]],
+                   refs: List[List[str]],
+                   beam_size: int) -> float:
     """
     Calculate the BLEU score between a reference and a hypothesis.
     Args: reference: str, the reference translation.
     hypothesis: str, the hypothesis translation.
     Returns: The BLEU score.
     """
-    reference = load_data(ref_path, split=False)
-    hypothesis = load_data(hyp_path, split=False)
+    # flatten in dimension 0
+    hyps = [h for hyp in hyps for h in hyp]
+    refs = [r for r in refs for _ in range(beam_size)]
     bleu = BLEU()
-    return bleu(reference, hypothesis)
+    return bleu(refs, hyps)
 
 
 def main():
     args = parse_args()
-    create_hyps(args.model_path,
-                args.source_data_path,
-                args.target_data_path,
-                args.source_dict_path,
-                args.target_dict_path,
-                args.config_path,
-                args.beam_search)
+    hyps = create_hyps(args.model_path,
+                       args.source_data_path,
+                       args.target_data_path,
+                       args.source_dict_path,
+                       args.target_dict_path,
+                       args.config_path,
+                       args.beam_search)
+
+    refs = load_data(args.target_data_path)
 
     # TODO: iterate over a dir of checkpoints and create a graph of BLEU scores
-    calculate_bleu(args.target_data_path,
-                   args.out_hyps_path)
+    print(
+        calculate_bleu(hyps,
+                       refs,
+                2)
+    )
 
 
 if __name__ == "__main__":
