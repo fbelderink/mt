@@ -1,8 +1,9 @@
 import torch.nn as nn
 from search.beam_search import translate
+from search.greedy_search import translate as greedy_translate
 from typing import List
 from preprocessing.dictionary import Dictionary
-from utils.file_manipulation import save_n_best_translations
+from utils.file_manipulation import save_n_best_translations, save_data
 from preprocessing.postprocessing import undo_prepocessing
 
 
@@ -14,8 +15,12 @@ def test_beam_search(model: nn.Module, source_data: List[List[str]], source_dict
     for sentence in target_sentences:
         post_processed_sentences.append(undo_prepocessing(sentence))
 
-    save_n_best_translations("eval/translations/n_best_translations", post_processed_sentences)
+    save_n_best_translations("eval/translations/beam_translations", post_processed_sentences)
 
 
-def test_greedy_search():
-    pass
+def test_greedy_search(model: nn.Module, source_data: List[List[str]], source_dict: Dictionary, target_dict: Dictionary, window_size: int):
+    target_sentences = greedy_translate(model, source_data, source_dict, target_dict, window_size)
+
+    post_processed_sentences = undo_prepocessing(target_sentences)
+
+    save_data("eval/translations/greedy_translations", post_processed_sentences)

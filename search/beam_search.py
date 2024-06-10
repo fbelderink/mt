@@ -69,7 +69,7 @@ def translate(model: nn.Module, source_data: List[List[str]], source_dict: Dicti
             # replace top k indices whit newly found best indices
             top_k_indices = new_top_k_indices
 
-        # get target translation
-        target_sentences.append(get_target_string(top_k_indices).tolist())
+        # get target translation (first window_size entries are sos)
+        target_sentences.append([sentence[window_size:] for sentence in get_target_string(top_k_indices).tolist()])
 
     return target_sentences
