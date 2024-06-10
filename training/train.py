@@ -114,7 +114,7 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
                 print()
 
             # evaluate model every k updates
-            if total_steps % val_rate == 0:
+            '''if total_steps % val_rate == 0:
                 model.eval()
 
                 total_val_loss = 0
@@ -151,7 +151,7 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
                 previous_validation_perplexity = validation_perplexity
                 print()
 
-                model.train()
+                model.train()'''
 
         if per_epoch:
             epoch_count += 1

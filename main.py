@@ -27,8 +27,7 @@ if __name__ == "__main__":
     #dict_de = Dictionary.load("eval/train_dict_de.pkl")
    #dict_en = Dictionary.load("data/train_dict_en.pkl")
 
-    #generate dataset
     #generate_dataset(multi30k_de, multi30k_en, args.window_size, 7000,
-                    # save_path='data/train7k.pt')
+                   # save_path='data/train7k.pt')
     #test_dataset_load('data/train7k.pt')
     train.train("data/train7k.pt", None, Hyperparameters(ConfigLoader("configs/config.yaml").get_config()))
