@@ -33,12 +33,14 @@ class Score:
         self.model = BasicNet(len(self.source_dict), len(self.target_dict), config,
                      window_size=window_size).to(self.device)
         if config.saved_model != "":
-            self.model.load_state_dict(torch.load(config.saved_model))
+            self.model = (torch.load(config.saved_model))
     def get_scores(self):
         overflow = False
         last_sprint = False
         current_sentence_index = 0
+        new_problist = []
         for S,T,L in self.scoring_dataloader:
+            current_list = []
             S = S.to(self.device)
             T = T.to(self.device)
             L = L.long().to(self.device)
@@ -46,27 +48,30 @@ class Score:
             #then get non zero indices
             indices = torch.nonzero(L == self.eos_index)
             indices = indices[:, 0].tolist()
-            if indices[-1] != self.batch_size:
-                overflow = True
+            indices.sort()
+
+
             result = self.model(S, T)
+
             label_list = L.view(-1).tolist()
             for i, item in enumerate(label_list):
                 prob_of_item = result[i, item].item()
-
-                self.probList[current_sentence_index].append(np.log(prob_of_item))
+                if prob_of_item < -13:
+                    prob_of_item = -1
+                current_list.append(prob_of_item)
                 if not last_sprint:
                     if i == indices[0]:
                         indices = indices[1:]
                         if indices == []:
                             last_sprint = True
                         current_sentence_index += 1
+                        new_problist.append(current_list)
+                        current_list = []
             last_sprint = False
-            print(self.probList)
-            quit()
         sums = []
-        for problist in self.probList:
-            sums.append((sum(problist)))
-        return self.probList
+        for loglist in new_problist:
+            sums.append(np.exp(sum(loglist)))
+        return sums
 
 
 test = Score("../eval/dict_de.pkl",
