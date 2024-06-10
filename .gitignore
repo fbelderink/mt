@@ -3,7 +3,7 @@
 env/
 TODO.txt
 .vscode/
-eval/
+eval/checkpoints/
 __pycache__/
 data/
 priv_test.py
