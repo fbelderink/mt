@@ -70,7 +70,9 @@ class Dictionary:
                 if not (token in self):
                     self.add_string(token)
 
-    def apply_vocabulary_to_text(self, data: List[List[str]], bpe_performed=False):
+    def apply_vocabulary_to_text(self,
+                                 data: List[List[str]],
+                                 bpe_performed=False) -> List[List[str]]:
         if not bpe_performed:
             data, _ = perform_bpe(data, self._operations)
 

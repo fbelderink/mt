@@ -37,7 +37,8 @@ def _execute_operation(word: str, operation: List[str]) -> str:
     return res
 
 
-def generate_bpe(training_data: List[List[str]], operations_number: int) -> List[List[str]]:
+def generate_bpe(training_data: List[List[str]],
+                 operations_number: int) -> List[List[str]]:
     operations = []
 
     # step 1

@@ -37,7 +37,7 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
                      window_size=train_set.get_window_size()).to(device)
 
     if config.saved_model != "":
-        model.load_state_dict(torch.load(config.saved_model))
+        model = torch.load(config.saved_model)
 
     optimizer = config.optimizer(model.parameters(), lr=lr)
 

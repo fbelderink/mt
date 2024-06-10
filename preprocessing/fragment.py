@@ -131,12 +131,22 @@ def _get_source_window_matrix(source_data: List[List[str]], target_data: List[Li
             # calculate alignment of index with given target and source sentence length
             b_i = _get_alignment(i, len(target_sentence), len(source_sentence))
             # get (padded) subsentence considering alignment and fill content into matrix row
-            word_matrix[i, :] = _get_padded_sentence(source_sentence, (b_i - window_size, b_i + window_size))
+            word_matrix[i, :] = _get_padded_sentence(source_sentence, (b_i - window_size + 1, b_i + window_size + 1))
 
         word_matrices.append(word_matrix)
 
     # return vertical stacked matrix of word matrices list
     return np.vstack(word_matrices)
+
+
+def create_source_window_matrix(source_data: List[str], source_dict: Dictionary, window_size: int, target_length: int):
+
+    # calculate matrices for complete data
+    source_window_mat = _get_source_window_matrix([source_data], [['<UNK>'] * target_length], window_size)
+
+    get_source_idx = np.vectorize(source_dict.get_index_of_string)
+
+    return get_source_idx(source_window_mat)
 
 
 def fragment_data(source_data: List[List[str]], target_data: List[List[str]], window_size: int) -> tuple:
@@ -162,4 +172,3 @@ def fragment_data_to_indices(source_data: List[List[str]],
     get_target_idx = np.vectorize(target_dict.get_index_of_string)
 
     return get_source_idx(S), get_target_idx(T), get_target_idx(L)
-

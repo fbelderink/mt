@@ -4,7 +4,6 @@ from preprocessing.dictionary import Dictionary
 from preprocessing.batch import create_batch, get_index_batches
 from utils.file_manipulation import save_batches
 
-
 def task_evaluate(multi30k_de: List[List[str]], multi30k_en: List[List[str]]):
     joint_set = []
     joint_set.extend(multi30k_en)
@@ -37,11 +36,11 @@ def task_batches(window_size, batch_size, multi30k_de, multi30k_en, lines=(1100,
                            window_size,
                            batch_size)
 
-    save_batches('eval/string_batches_old', batches)
+    save_batches('eval/string_batches', batches)
 
     dic_de = Dictionary([], german_ops, transformed_words=transformed_words_de)  # generate from transformed words
 
     dic_en = Dictionary([], english_ops, transformed_words=transformed_words_en)
 
     index_batches = get_index_batches(batches, dic_de, dic_en)
-    save_batches('eval/index_batches_old', index_batches)
+    save_batches('eval/index_batches', index_batches)
