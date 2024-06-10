@@ -4,7 +4,7 @@ import torch.nn as nn
 from datetime import datetime
 from pathlib import Path
 import os
-
+import shutil
 
 def load_data(path: str,
               split: bool = True) -> Union[List[str], List[List[str]]]:
@@ -64,4 +64,6 @@ def save_checkpoint(model: nn.Module):
     time = datetime.today().strftime('%H_%M_%S')
 
     Path(f"eval/checkpoints/{date}").mkdir(exist_ok=True)
-    torch.save(model.state_dict(), f"eval/checkpoints/{date}/{time}.pth")
+    Path(f"eval/checkpoints/{date}/{time}").mkdir(exist_ok=True)
+    torch.save(model.state_dict(), f"eval/checkpoints/{date}/{time}/MODEL.pth")
+    shutil.copyfile("configs/config.yaml", f"eval/checkpoints/{date}/{time}/CONFIG.yaml")

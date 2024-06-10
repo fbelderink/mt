@@ -30,8 +30,8 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
     print("Number of Batches: " + str(len(train_dataloader)))
     print("Batch Size: " + str(batch_size))
 
-    validation_set: TranslationDataset = TranslationDataset.load(validation_path)
-    validation_dataloader = DataLoader(validation_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+    #validation_set: TranslationDataset = TranslationDataset.load(validation_path)
+    #validation_dataloader = DataLoader(validation_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
 
     model = BasicNet(train_set.get_source_dict_size(), train_set.get_target_dict_size(), config,
                      window_size=train_set.get_window_size()).to(device)
@@ -82,7 +82,7 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
 
             S = S.to(device)
             T = T.to(device)
-            L = L.to(device)
+            L = L.long().to(device)
 
             optimizer.zero_grad()
 
