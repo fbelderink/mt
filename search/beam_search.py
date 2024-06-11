@@ -1,7 +1,6 @@
 import torch
 import numpy as np
 import torch.nn as nn
-from preprocessing.dataset import TranslationDataset
 from preprocessing.dictionary import Dictionary
 from preprocessing.fragment import create_source_window_matrix
 from typing import List
@@ -74,6 +73,6 @@ def translate(model: nn.Module,
             top_k_indices = new_top_k_indices
 
         # get target translation (first window_size entries are sos)
-        target_sentences.append([sentence[window_size:] for sentence in get_target_string(top_k_indices).tolist()])
+        target_sentences.append(get_target_string(top_k_indices[np.argmax(top_k_values)][window_size:]).tolist())
 
     return target_sentences
