@@ -3,7 +3,9 @@
 env/
 TODO.txt
 .vscode/
-eval/checkpoints/
+eval/checkpoints
+eval/bpe
+eval/translations
 __pycache__/
 data/
 priv_test.py

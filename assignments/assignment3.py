@@ -14,7 +14,7 @@ def test_linear_layer():
     print(layer(x))
 
 
-def generate_dataset(multi30k_de, multi30k_en, window_size, num_operations, dict_de=None, dict_en=None, save_path=None):
+def generate_dataset(multi30k_de, multi30k_en, window_size, num_operations, dict_de=None, dict_en=None, save_path=None) -> TranslationDataset:
 
     if not dict_de:
         german_ops = generate_bpe(multi30k_de, num_operations)
@@ -30,6 +30,8 @@ def generate_dataset(multi30k_de, multi30k_en, window_size, num_operations, dict
 
     if save_path is not None:
         dataset.save(save_path)
+
+    return dataset
 
 
 def test_dataset_load(path):
