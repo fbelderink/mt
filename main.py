@@ -46,15 +46,15 @@ if __name__ == "__main__":
     #                 dict_de=dict_de, dict_en=dict_en, save_path='data/val7k.pt')
     #test_dataset_load('data/train7k.pt')
 
-    #train.train("data/train7k.pt", "data/val7k.pt",
-    #            Hyperparameters(ConfigLoader("configs/config.yaml").get_config()))
+    train.train("data/train7k.pt", "data/val7k.pt",
+                Hyperparameters(ConfigLoader("configs/config.yaml").get_config()))
 
-    model = torch.load("eval/checkpoints/17_16_39.pth")
+    model = torch.load("eval/checkpoints/12-06-2024/20_13_09.pth", map_location=torch.device("cpu"))
 
-    translations = load_data("eval/translations/beam_translations")
+    #translations = load_data("eval/translations/beam_translations")
 
     #translations = test_beam_search(model, de_data, dict_de, dict_en, 3, args.window_size)
     #translations = test_greedy_search(model, data_de, dict_de, dict_en, args.window_size)
     #test_get_scores(model, source_data, target_data, dict_de, dict_en, args.window_size)
     test_model_bleu(model, data_de, data_en, dict_de, dict_en,
-                    3, args.window_size, args.do_bleu_search, translations)
+                    3, args.window_size, args.do_bleu_search, None)

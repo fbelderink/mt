@@ -12,6 +12,10 @@ def translate(model: nn.Module,
               target_dict: Dictionary,
               beam_size: int,
               window_size: int):
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    model = model.to(device)
     model.eval()
 
     source_data = source_dict.apply_vocabulary_to_text(source_data, bpe_performed=False)
@@ -24,9 +28,9 @@ def translate(model: nn.Module,
     for sentence in source_data:
         S = create_source_window_matrix(sentence, source_dict, window_size, len(sentence) * 1 + 1)
 
-        S = torch.from_numpy(S)
+        S = torch.from_numpy(S).to(device)
 
-        beam_targets = torch.from_numpy(get_target_idx([['<s>'] * window_size]))
+        beam_targets = torch.from_numpy(get_target_idx([['<s>'] * window_size])).to(device)
 
         top_k_values = [0]
         top_k_indices = [[target_dict.get_index_of_string("<s>")] * window_size] * beam_size
@@ -39,7 +43,7 @@ def translate(model: nn.Module,
             pred = model(s, beam_targets)
 
             # add previous top k values along beam size dim
-            pred += torch.tensor(top_k_values).unsqueeze(1)
+            pred += torch.tensor(top_k_values).unsqueeze(1).to(device)
 
             # flatten predictions to get top k along all previous top k predictions
             pred = pred.reshape((1, beam_targets.shape[0] * pred.shape[-1]))
@@ -65,7 +69,7 @@ def translate(model: nn.Module,
                 new_top_k_indices.append(top_k_indices[previous_indices[i]] + [current_indices[i]])
 
                 # replace indices in input for net
-                beam_targets[i] = torch.tensor(new_top_k_indices[i][-window_size:])
+                beam_targets[i] = torch.tensor(new_top_k_indices[i][-window_size:]).to(device)
 
             # record current best values
             top_k_values = top_k.values.squeeze(0).tolist()
