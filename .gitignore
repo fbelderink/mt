@@ -7,7 +7,6 @@ eval/checkpoints
 eval/bpe
 eval/translations
 __pycache__/
-data/
 priv_test.py
 SPPvenv/
 runs/

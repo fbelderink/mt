@@ -42,7 +42,7 @@ if __name__ == "__main__":
     dict_en = Dictionary.load("data/dicts/train_dict_en.pkl")
 
     #generate dataset
-    #generate_dataset(multi30k_de, multi30k_en, args.window_size, 7000,
+    #generate_dataset(data_de, data_en, args.window_size, 7000,
     #                 dict_de=dict_de, dict_en=dict_en, save_path='data/val7k.pt')
     #test_dataset_load('data/train7k.pt')
 
