@@ -3,7 +3,6 @@
 env/
 TODO.txt
 .vscode/
-eval/checkpoints
 eval/bpe
 eval/translations
 __pycache__/
