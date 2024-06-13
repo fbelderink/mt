@@ -70,7 +70,7 @@ def load_model(path: str, model: nn.Module) -> nn.Module:
 
 
 def save_checkpoint(model: nn.Module):
-    date = datetime.today().strftime('%d-%m-%Y')
+    date = datetime.today().strftime('%Y-%m-%d')
     time = datetime.today().strftime('%H_%M_%S')
     print("\n saving checkpoint at " + f"eval/checkpoints/{date}/{time}.pth" + "\n")
     Path(f"eval/checkpoints/{date}").mkdir(exist_ok=True)
