@@ -12,7 +12,8 @@ def translate(model: nn.Module,
               target_dict: Dictionary,
               beam_size: int,
               window_size: int,
-              get_n_best=False):
+              get_n_best=False,
+              alignment_factor=1):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     model = model.to(device)
@@ -26,7 +27,7 @@ def translate(model: nn.Module,
     target_sentences = []
 
     for sentence in source_data:
-        S = create_source_window_matrix(sentence, source_dict, window_size, len(sentence) * 1 + 1)
+        S = create_source_window_matrix(sentence, source_dict, window_size, len(sentence) * alignment_factor + 1)
 
         S = torch.from_numpy(S).to(device)
 

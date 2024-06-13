@@ -2,7 +2,6 @@ from preprocessing.dictionary import Dictionary
 import torch
 import torch.nn as nn
 import numpy as np
-from preprocessing.postprocessing import undo_prepocessing
 from typing import List
 from preprocessing.fragment import create_source_window_matrix
 
@@ -11,11 +10,8 @@ def translate(model: nn.Module,
               source_data: List[List[str]],
               source_dict: Dictionary,
               target_dict: Dictionary,
-              window_size: int):
-    # TODO experiment with bigger window size
-
-    # TODO
-    alignment_factor = 1
+              window_size: int,
+              alignment_factor=1):
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 

@@ -7,6 +7,7 @@ from multiprocessing import freeze_support
 
 from utils.file_manipulation import save_checkpoint
 
+
 # niedrigste perplexity: 12
 
 def _count_correct_predictions(pred, L):
@@ -160,8 +161,4 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
         if per_epoch:
             epoch_count += 1
 
-
-if __name__ == '__main__':
-    # call your train function here
-    freeze_support()
-    train("data/training_dataset_joint", "data/validation_dataset_joint")
+    save_checkpoint(model)
