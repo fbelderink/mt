@@ -11,8 +11,8 @@ def translate(model: nn.Module,
               source_dict: Dictionary,
               target_dict: Dictionary,
               beam_size: int,
-              window_size: int):
-
+              window_size: int,
+              get_n_best=False):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     model = model.to(device)
@@ -58,7 +58,6 @@ def translate(model: nn.Module,
             # init list to record new top k predictions
             new_top_k_indices = []
             for i in range(beam_size):
-
                 # we flattened the prediction vector, so find out to which previous predictions new top k indices belong
                 previous_indices = [i // len(target_dict) for i in top_k.indices.squeeze(0).tolist()]
 
@@ -77,6 +76,9 @@ def translate(model: nn.Module,
             top_k_indices = new_top_k_indices
 
         # get target translation (first window_size entries are sos)
-        target_sentences.append(get_target_string(top_k_indices[np.argmax(top_k_values)][window_size:]).tolist())
+        if not get_n_best:
+            target_sentences.append(get_target_string(top_k_indices[np.argmax(top_k_values)][window_size:]).tolist())
+        else:
+            target_sentences.append(get_target_string(top_k_indices[:, window_size:]).tolist())
 
     return target_sentences

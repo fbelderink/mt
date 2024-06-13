@@ -12,4 +12,4 @@ load_model_path: ""
 half_lr: False
 window_size: 3
 dropout_rate: 0.3
-early_stopping: False
+early_stopping: True

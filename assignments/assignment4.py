@@ -13,8 +13,8 @@ import os
 
 
 def test_beam_search(model: nn.Module, source_data: List[List[str]], source_dict: Dictionary,
-                     target_dict: Dictionary, beam_size: int, window_size: int):
-    target_sentences = translate(model, source_data, source_dict, target_dict, beam_size, window_size)
+                     target_dict: Dictionary, beam_size: int, window_size: int, get_n_best=True):
+    target_sentences = translate(model, source_data, source_dict, target_dict, beam_size, window_size, get_n_best)
 
     post_processed_sentences = undo_prepocessing(target_sentences)
 

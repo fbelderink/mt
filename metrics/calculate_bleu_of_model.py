@@ -21,7 +21,6 @@ def get_bleu_of_model(model: nn.Module,
     if translations is not None:
         return bleu(reference_data, translations)
 
-
     if do_beam_search:
         translations = beam_search.translate(model, source_data, source_dict, target_dict, beam_size, window_size)
     else:
