@@ -5,7 +5,7 @@ from search.greedy_search import translate as greedy_translate
 from typing import List
 from preprocessing.dictionary import Dictionary
 from utils.file_manipulation import save_data, save_n_best_translations
-from preprocessing.postprocessing import undo_prepocessing
+from postprocessing.postprocessing import undo_prepocessing
 from metrics.calculate_bleu_of_model import get_bleu_of_model
 from scoring.score import get_scores
 import numpy as np

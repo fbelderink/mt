@@ -68,10 +68,10 @@ if __name__ == "__main__":
 
     model = torch.load("eval/best_models/bleu28_6_w3.pth", map_location=device)
 
-    translations = test_beam_search(model, data_de_dev, dict_de, dict_en, 50, model.window_size, get_n_best=False)
-    #translations = load_data("eval/translations/best_translations")
+    #translations = test_beam_search(model, data_de_dev, dict_de, dict_en, 50, model.window_size, get_n_best=False)
+    translations = load_data("eval/translations/best_translations")
 
-    #translations = test_greedy_search(model, data_de, dict_de, dict_en, model.window_size)
+    #translations = test_greedy_search(model, data_de_dev, dict_de, dict_en, model.window_size)
 
     #test_get_scores(model, data_de_dev, data_en_dev, dict_de, dict_en, model.window_size)
 

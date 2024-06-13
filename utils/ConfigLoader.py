@@ -1,9 +1,5 @@
 import yaml
-import torch
-from utils.hyperparameters import Hyperparameters
 
-from datetime import datetime
-from pathlib import Path
 class ConfigLoader:
     def __init__(self, config_file):
         self.config_file = config_file
@@ -17,7 +13,4 @@ class ConfigLoader:
 
     def get_config(self):
         return self.yaml
-
-
-#print(list(ConfigLoader("config.yaml").get_config()["dimensions"].values()))
 

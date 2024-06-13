@@ -3,7 +3,7 @@ from search import greedy_search
 import torch.nn as nn
 from preprocessing.dictionary import Dictionary
 from typing import List
-from preprocessing.postprocessing import undo_prepocessing
+from postprocessing.postprocessing import undo_prepocessing
 from metrics.metrics import BLEU
 
 

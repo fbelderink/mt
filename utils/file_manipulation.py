@@ -6,6 +6,7 @@ from pathlib import Path
 import os
 import shutil
 
+
 def load_data(path: str,
               split: bool = True) -> Union[List[str], List[List[str]]]:
     """
