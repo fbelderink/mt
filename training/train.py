@@ -129,7 +129,7 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
 
                     total_val_samples += L_v.size(0)
 
-                    pred_v = model(S_v, T_v)
+                    pred_v = model(S_v, T_v, apply_log_softmax=False)
 
                     total_val_correct_predictions += _count_correct_predictions(pred_v, L_v)
 

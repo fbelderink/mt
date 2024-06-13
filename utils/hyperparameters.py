@@ -14,3 +14,4 @@ class Hyperparameters:
         self.saved_model = config["load_model_path"]
         self.half_lr = config["half_lr"]
         self.window_size = config["window_size"]
+        self.dropout_rate = config["dropout_rate"]
