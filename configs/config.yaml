@@ -11,3 +11,4 @@ checkpoints_per_epoch: 5
 load_model_path: ""
 half_lr: True
 window_size: 2
+dropout_rate: 0.5
