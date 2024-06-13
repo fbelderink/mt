@@ -40,8 +40,11 @@ class BasicNet(nn.Module):
         self.dropout1 = nn.Dropout(p=config.dropout_rate)
 
         # Fully Connected Layer 2 / Projection
-        self.fc2 = nn.Linear(self.hidden_dim_2, target_dict_size)
+        self.fc2 = nn.Linear(self.hidden_dim_2, self.hidden_dim_3)
         self.dropout2 = nn.Dropout(p=config.dropout_rate)
+
+        self.fc3 = nn.Linear(self.hidden_dim_3, target_dict_size)
+        self.dropout3 = nn.Dropout(p=config.dropout_rate)
 
         # Output layer
         self.output_layer = nn.Linear(target_dict_size, target_dict_size)
@@ -58,10 +61,10 @@ class BasicNet(nn.Module):
             self.fc2 = LinearLayer(self.hidden_dim_2, target_dict_size)
 
             # Fully Connected Layer 2 / Projection
-            self.fc2 = nn.Linear(self.hidden_dim_2, self.hidden_dim_3)
+            self.fc2 = LinearLayer(self.hidden_dim_2, self.hidden_dim_3)
             self.dropout2 = nn.Dropout(p=config.dropout_rate)
 
-            self.fc3 = nn.Linear(self.hidden_dim_3, target_dict_size)
+            self.fc3 = LinearLayer(self.hidden_dim_3, target_dict_size)
             self.dropout3 = nn.Dropout(p=config.dropout_rate)
 
             # Output layer

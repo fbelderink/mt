@@ -57,7 +57,8 @@ if __name__ == "__main__":
 
     model_hyperparameters = Hyperparameters(ConfigLoader("configs/config.yaml").get_config())
 
-    train.train(f"data/train7k_w{args.window_size}.pt", f"data/val7k_w{args.window_size}.pt",
+    train.train(f"data/train7k_w{model_hyperparameters.window_size}.pt",
+                f"data/val7k_w{model_hyperparameters.window_size}.pt",
                 model_hyperparameters, val_rate=200)
 
     #model = torch.load("eval/checkpoints/12-06-2024/21_19_51.pth", map_location=torch.device("cpu"))
