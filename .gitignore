@@ -5,6 +5,7 @@ TODO.txt
 .vscode/
 eval/bpe
 eval/translations
+eval/**/*.pth
 __pycache__/
 priv_test.py
 SPPvenv/

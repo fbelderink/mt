@@ -4,12 +4,12 @@ dimensions:
   hidden2: 1200
 activation_function: "relu"
 optimizer: "Adam"
-learning_rate: 0.008
+learning_rate: 0.01
 use_custom_linear_layer: False
 batch_size: 200
 checkpoints_per_epoch: 1
 load_model_path: ""
 half_lr: True
 window_size: 3
-dropout_rate: 0.1
+dropout_rate: 0.05
 early_stopping: False
