@@ -1,8 +1,7 @@
 dimensions:
-  hidden1: 200
-  hidden2: 400
-  hidden3: 500
   embed_dim: 200
+  hidden1: 400
+  hidden2: 800
 activation_function: "relu"
 optimizer: "Adam"
 learning_rate: 0.004
