@@ -55,20 +55,22 @@ if __name__ == "__main__":
     #                 dict_de=dict_de, dict_en=dict_en, save_path=f'data/val7k_w{args.window_size}.pt')
     #test_dataset_load(f'data/val7k_w{args.window_size}.pt')
 
-    #train.train("data/train7k.pt", "data/val7k.pt",
-    #            Hyperparameters(ConfigLoader("configs/config.yaml").get_config()), val_rate=1)
+    model_hyperparameters = Hyperparameters(ConfigLoader("configs/config.yaml").get_config())
+
+    train.train(f"data/train7k_w{args.window_size}.pt", f"data/val7k_w{args.window_size}.pt",
+                model_hyperparameters, val_rate=200)
 
     #model = torch.load("eval/checkpoints/12-06-2024/21_19_51.pth", map_location=torch.device("cpu"))
 
     #translations = load_data("eval/translations/beam_translations")
 
-    #translations = test_beam_search(model, de_data, dict_de, dict_en, 3, args.window_size)
+    #translations = test_beam_search(model, data_de_dev, dict_de, dict_en, 3, args.window_size, get_n_best=True)
+    #print(translations)
     #translations = test_greedy_search(model, data_de, dict_de, dict_en, args.window_size)
     #test_get_scores(model, source_data, target_data, dict_de, dict_en, args.window_size)
     #test_model_bleu(model, data_de, data_en, dict_de, dict_en,
     #                3, args.window_size, args.do_bleu_search, None)
 
-    bleus = determine_models_bleu('eval/checkpoints/12-06-2024', data_de_dev, data_en_dev, dict_de, dict_en,
-                                  3, 2, True)
-
-    print(f"Best model: {max(bleus)}")
+    #bleus = determine_models_bleu('eval/checkpoints/12-06-2024', data_de_dev, data_en_dev, dict_de, dict_en,
+    #                              3, 2, True)
+    #print(f"Best model: {max(bleus)}")
