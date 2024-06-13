@@ -13,7 +13,6 @@ class BasicNet(nn.Module):
         self.embed_dim = config.dimensions[0]
         self.hidden_dim_1 = config.dimensions[1]
         self.hidden_dim_2 = config.dimensions[2]
-        self.hidden_dim_3 = config.dimensions[3]
 
         self.activation_function = config.activation
 
@@ -37,17 +36,11 @@ class BasicNet(nn.Module):
 
         # Fully Connected Layer 1
         self.fc1 = nn.Linear(2 * self.hidden_dim_1, self.hidden_dim_2)
-        self.dropout1 = nn.Dropout(p=config.dropout_rate)
+        self.fc1_bn = nn.BatchNorm1d(self.hidden_dim_2)
 
         # Fully Connected Layer 2 / Projection
-        self.fc2 = nn.Linear(self.hidden_dim_2, self.hidden_dim_3)
-        self.dropout2 = nn.Dropout(p=config.dropout_rate)
-
-        self.fc3 = nn.Linear(self.hidden_dim_3, target_dict_size)
-        self.dropout3 = nn.Dropout(p=config.dropout_rate)
-
-        # Output layer
-        self.output_layer = nn.Linear(target_dict_size, target_dict_size)
+        self.fc2 = nn.Linear(self.hidden_dim_2, target_dict_size)
+        self.fc2_bn = nn.BatchNorm1d(target_dict_size)
 
         if self.use_custom_ll:
             # Fully connected source and target layers
@@ -59,16 +52,6 @@ class BasicNet(nn.Module):
 
             # Fully Connected Layer 2 / Projection
             self.fc2 = LinearLayer(self.hidden_dim_2, target_dict_size)
-
-            # Fully Connected Layer 2 / Projection
-            self.fc2 = LinearLayer(self.hidden_dim_2, self.hidden_dim_3)
-            self.dropout2 = nn.Dropout(p=config.dropout_rate)
-
-            self.fc3 = LinearLayer(self.hidden_dim_3, target_dict_size)
-            self.dropout3 = nn.Dropout(p=config.dropout_rate)
-
-            # Output layer
-            self.output_layer = LinearLayer(target_dict_size, target_dict_size)
 
     def forward(self, S, T, apply_log_softmax=True):
 
@@ -95,19 +78,14 @@ class BasicNet(nn.Module):
 
         # Fully connected layers
         fc1_output = self.fc1(concat)
-        fc1_output = self.dropout1(fc1_output)
+        fc1_output = self.fc1_bn(fc1_output)
         fc1_output = self.activation_function(fc1_output)
 
         fc2_output = self.fc2(fc1_output)
-        fc2_output = self.dropout2(fc2_output)
-        fc2_output = self.activation_function(fc2_output)
-
-        fc3_output = self.fc3(fc2_output)
-        fc3_output = self.dropout3(fc3_output)
-        fc3_output = self.activation_function(fc3_output)
+        fc2_output = self.fc2_bn(fc2_output)
 
         # Output layer with softmax activation in nn.CrossEntropyLoss
-        output = self.output_layer(fc3_output)
+        output = fc2_output
 
         if not self.training and apply_log_softmax:
             output = torch.nn.functional.log_softmax(output, dim=1)
