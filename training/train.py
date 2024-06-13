@@ -148,6 +148,9 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
                         param_group['lr'] = param_group['lr'] / 2
                     print("learning rate halfed; new learning rate: " + str(optimizer.param_groups[0]['lr']))
 
+                if config.early_stopping and 0 < previous_validation_perplexity <= validation_perplexity:
+                    return
+
                 previous_validation_perplexity = validation_perplexity
                 print()
 
