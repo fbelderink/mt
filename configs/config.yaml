@@ -1,15 +1,15 @@
 dimensions:
-  embed_dim: 200
-  hidden1: 400
-  hidden2: 800
+  embed_dim: 150
+  hidden1: 600
+  hidden2: 1200
 activation_function: "relu"
 optimizer: "Adam"
-learning_rate: 0.004
+learning_rate: 0.008
 use_custom_linear_layer: False
 batch_size: 200
 checkpoints_per_epoch: 1
 load_model_path: ""
 half_lr: True
-window_size: 2
-dropout_rate: 0.3
+window_size: 3
+dropout_rate: 0.1
 early_stopping: False
