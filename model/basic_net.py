@@ -10,9 +10,10 @@ class BasicNet(nn.Module):
         super(BasicNet, self).__init__()
 
         # hyperparameters
-        self.hidden_dim_1 = config.dimensions[0]
-        self.hidden_dim_2 = config.dimensions[1]
-        self.embed_dim = config.dimensions[2]
+        self.embed_dim = config.dimensions[0]
+        self.hidden_dim_1 = config.dimensions[1]
+        self.hidden_dim_2 = config.dimensions[2]
+        self.hidden_dim_3 = config.dimensions[3]
 
         self.activation_function = config.activation
 
@@ -56,6 +57,13 @@ class BasicNet(nn.Module):
             # Fully Connected Layer 2 / Projection
             self.fc2 = LinearLayer(self.hidden_dim_2, target_dict_size)
 
+            # Fully Connected Layer 2 / Projection
+            self.fc2 = nn.Linear(self.hidden_dim_2, self.hidden_dim_3)
+            self.dropout2 = nn.Dropout(p=config.dropout_rate)
+
+            self.fc3 = nn.Linear(self.hidden_dim_3, target_dict_size)
+            self.dropout3 = nn.Dropout(p=config.dropout_rate)
+
             # Output layer
             self.output_layer = LinearLayer(target_dict_size, target_dict_size)
 
@@ -91,8 +99,12 @@ class BasicNet(nn.Module):
         fc2_output = self.dropout2(fc2_output)
         fc2_output = self.activation_function(fc2_output)
 
+        fc3_output = self.fc3(fc2_output)
+        fc3_output = self.dropout3(fc3_output)
+        fc3_output = self.activation_function(fc3_output)
+
         # Output layer with softmax activation in nn.CrossEntropyLoss
-        output = self.output_layer(fc2_output)
+        output = self.output_layer(fc3_output)
 
         if not self.training and apply_log_softmax:
             output = torch.nn.functional.log_softmax(output, dim=1)
