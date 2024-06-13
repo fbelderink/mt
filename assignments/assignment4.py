@@ -19,7 +19,7 @@ def test_beam_search(model: nn.Module, source_data: List[List[str]], source_dict
     post_processed_sentences = undo_prepocessing(target_sentences)
 
     if not get_n_best:
-        save_data("eval/translations/best_translations", post_processed_sentences)
+        save_data("eval/translations/beam_translations", post_processed_sentences)
     else:
         save_n_best_translations("eval/translations/beam_translations", post_processed_sentences)
 

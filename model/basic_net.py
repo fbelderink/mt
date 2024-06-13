@@ -14,6 +14,8 @@ class BasicNet(nn.Module):
         self.hidden_dim_1 = config.dimensions[1]
         self.hidden_dim_2 = config.dimensions[2]
 
+        self.window_size = window_size
+
         self.activation_function = config.activation
 
         self.use_custom_ll = config.use_custom_ll
@@ -28,11 +30,11 @@ class BasicNet(nn.Module):
         self.target_embedding = nn.Embedding(target_dict_size, self.embed_dim)
 
         # Fully connected source and target layers
-        self.fc_source = nn.Linear(self.embed_dim * (2 * window_size + 1), self.hidden_dim_1)
+        self.fc_source = nn.Linear(self.embed_dim * (2 * self.window_size + 1), self.hidden_dim_1)
         self.fc_source_bn = nn.BatchNorm1d(self.hidden_dim_1)
         self.dropout_source = nn.Dropout(p=config.dropout_rate)
 
-        self.fc_target = nn.Linear(self.embed_dim * window_size, self.hidden_dim_1)
+        self.fc_target = nn.Linear(self.embed_dim * self.window_size, self.hidden_dim_1)
         self.fc_target_bn = nn.BatchNorm1d(self.hidden_dim_1)
         self.dropout_target = nn.Dropout(p=config.dropout_rate)
 
@@ -47,8 +49,8 @@ class BasicNet(nn.Module):
 
         if self.use_custom_ll:
             # Fully connected source and target layers
-            self.fc_source = LinearLayer(self.embed_dim * (2 * window_size + 1), self.hidden_dim_1)
-            self.fc_target = LinearLayer(self.embed_dim * window_size, self.hidden_dim_1)
+            self.fc_source = LinearLayer(self.embed_dim * (2 * self.window_size + 1), self.hidden_dim_1)
+            self.fc_target = LinearLayer(self.embed_dim * self.window_size, self.hidden_dim_1)
 
             # Fully Connected Layer 1
             self.fc1 = LinearLayer(2 * self.hidden_dim_1, self.hidden_dim_2)

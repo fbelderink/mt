@@ -1,5 +1,5 @@
 import argparse
-from utils.file_manipulation import load_data
+from utils.file_manipulation import load_data, save_checkpoint
 from assignments.assignment1 import *
 from assignments.assignment3 import *
 from assignments.assignment2 import *
@@ -22,7 +22,7 @@ def _parse_arguments() -> argparse.Namespace:
     parser.add_argument('-r', '--refs', type=str)
     parser.add_argument('-B', '--batch_size', type=int)
     parser.add_argument('-w', '--window_size', type=int)
-    parser.add_argument('-bs', '--do_bleu_search', type=bool)
+    parser.add_argument('-bs', '--do_beam_search', type=bool)
 
     return parser.parse_args()
 
@@ -55,26 +55,29 @@ if __name__ == "__main__":
     #                 dict_de=dict_de, dict_en=dict_en, save_path=f'data/val7k_w{args.window_size}.pt')
     #test_dataset_load(f'data/val7k_w{args.window_size}.pt')
 
-    model_hyperparameters = Hyperparameters(ConfigLoader("configs/config.yaml").get_config())
+    #model_hyperparameters = Hyperparameters(ConfigLoader("configs/config.yaml").get_config())
 
-    train.train(f"data/train7k_w{model_hyperparameters.window_size}.pt",
-                f"data/val7k_w{model_hyperparameters.window_size}.pt",
-                model_hyperparameters,
-                val_rate=400,
-                train_eval_rate=200,
-                num_workers=2)
+    #train.train(f"data/train7k_w{model_hyperparameters.window_size}.pt",
+    #            f"data/val7k_w{model_hyperparameters.window_size}.pt",
+    #            model_hyperparameters,
+    #            val_rate=400,
+    #            train_eval_rate=200,
+    #            num_workers=2)
 
-    #model = torch.load("eval/checkpoints/12-06-2024/21_19_51.pth", map_location=torch.device("cpu"))
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    #translations = load_data("eval/translations/beam_translations")
+    model = torch.load("eval/best_models/bleu28_6_w3.pth", map_location=device)
 
-    #translations = test_beam_search(model, data_de_dev, dict_de, dict_en, 3, args.window_size, get_n_best=True)
-    #print(translations)
-    #translations = test_greedy_search(model, data_de, dict_de, dict_en, args.window_size)
-    #test_get_scores(model, source_data, target_data, dict_de, dict_en, args.window_size)
-    #test_model_bleu(model, data_de, data_en, dict_de, dict_en,
-    #                3, args.window_size, args.do_bleu_search, None)
+    translations = test_beam_search(model, data_de_dev, dict_de, dict_en, 50, model.window_size, get_n_best=False)
+    #translations = load_data("eval/translations/best_translations")
 
-    #bleus = determine_models_bleu('eval/checkpoints/12-06-2024', data_de_dev, data_en_dev, dict_de, dict_en,
-    #                              3, 2, True)
+    #translations = test_greedy_search(model, data_de, dict_de, dict_en, model.window_size)
+
+    #test_get_scores(model, data_de_dev, data_en_dev, dict_de, dict_en, model.window_size)
+
+    test_model_bleu(model, data_de_dev, data_en_dev, dict_de, dict_en,
+                    50,  model.window_size, args.do_beam_search, translations)
+
+    #bleus = determine_models_bleu('eval/checkpoints/2024-06-12', data_de_dev, data_en_dev, dict_de, dict_en,
+    #                              3, model.window_size, True)
     #print(f"Best model: {max(bleus)}")
