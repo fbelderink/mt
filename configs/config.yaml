@@ -9,6 +9,7 @@ use_custom_linear_layer: False
 batch_size: 200
 checkpoints_per_epoch: 5
 load_model_path: ""
-half_lr: True
-window_size: 2
-dropout_rate: 0.5
+half_lr: False
+window_size: 3
+dropout_rate: 0.3
+early_stopping: False

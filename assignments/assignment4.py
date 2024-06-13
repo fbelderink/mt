@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 from search.beam_search import translate
 from search.greedy_search import translate as greedy_translate
@@ -8,6 +9,7 @@ from preprocessing.postprocessing import undo_prepocessing
 from metrics.calculate_bleu_of_model import get_bleu_of_model
 from scoring.score import get_scores
 import numpy as np
+import os
 
 
 def test_beam_search(model: nn.Module, source_data: List[List[str]], source_dict: Dictionary,
@@ -43,7 +45,30 @@ def test_get_scores(model: nn.Module, source_data: List[List[str]], target_data:
 def test_model_bleu(model: nn.Module, source_data: List[List[str]], reference_data: List[List[str]],
                     source_dict: Dictionary, target_dict: Dictionary, beam_size: int, window_size: int,
                     do_beam_search, translations: List[List[str]]):
-
     bleu_score = get_bleu_of_model(model, source_data, reference_data, source_dict, target_dict, beam_size, window_size,
                                    do_beam_search, translations)
     print(f"Model BLEU: {bleu_score}")
+
+
+def determine_models_bleu(models_path: str, source_data: List[List[str]], reference_data: List[List[str]],
+                          source_dict: Dictionary, target_dict: Dictionary, beam_size: int, window_size: int,
+                          do_beam_search):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    directory = os.fsencode(models_path)
+
+    scores = []
+
+    for file in os.listdir(directory):
+        filename = os.fsdecode(file)
+        if filename.endswith(".pth"):
+            model_path = os.path.join(models_path, filename)
+            print(f"determine bleu of {model_path}")
+            model = torch.load(model_path, map_location=device)
+
+            bleu_score = get_bleu_of_model(model, source_data, reference_data, source_dict, target_dict, beam_size,
+                                           window_size, do_beam_search, None)
+
+            print(f"Model BLEU: {bleu_score}")
+            scores.append((bleu_score, model_path))
+
+    return scores
