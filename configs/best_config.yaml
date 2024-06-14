@@ -7,7 +7,7 @@ optimizer: "Adam"
 learning_rate: 0.01
 use_custom_linear_layer: False
 batch_size: 200
-checkpoints_per_epoch: 1
+checkpoints_per_epoch: 6
 load_model_path: ""
 half_lr: True
 window_size: 3

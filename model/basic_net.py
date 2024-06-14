@@ -6,13 +6,18 @@ from utils.hyperparameters import Hyperparameters
 
 
 class BasicNet(nn.Module):
-    def __init__(self, source_dict_size, target_dict_size, config: Hyperparameters, window_size):
+    def __init__(self, source_dict_size, target_dict_size, config: Hyperparameters, window_size, model_name = ""):
         super(BasicNet, self).__init__()
-
+        """
+        TODO: 
+        - eigener Linear layer verwenden
+        - add Batch norm
+        """
         # hyperparameters
         self.embed_dim = config.dimensions[0]
         self.hidden_dim_1 = config.dimensions[1]
         self.hidden_dim_2 = config.dimensions[2]
+        self.model_name = model_name
 
         self.window_size = window_size
 
