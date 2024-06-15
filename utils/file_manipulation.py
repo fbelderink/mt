@@ -70,13 +70,10 @@ def load_model(path: str, model: nn.Module) -> nn.Module:
     return model
 
 
-def save_checkpoint(model: nn.Module, model_name, perplexity = None):
+def save_checkpoint(model: nn.Module, model_name):
     date = datetime.today().strftime('%Y-%m-%d')
     time = datetime.today().strftime('%H_%M_%S')
     print("\n saving checkpoint at "+ f"eval/checkpoints/{date}-{model_name}/{time}.pth" + "\n")
     Path(f"eval/checkpoints/{date}-{model_name}").mkdir(exist_ok=True)
     torch.save(model, f"eval/checkpoints/{date}-{model_name}/{time}.pth")
-    perplexity_file = open(f"eval/checkpoints/{date}-{model_name}/{time}.ppl", "w")
-    perplexity_file.write(str(perplexity))
-    perplexity_file.close()
 
