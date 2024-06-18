@@ -36,22 +36,20 @@ def execute_runs():
               save_ppl=True)
 
 
-def evaluate_scores(checkpoint_path, source_data_path, reference_data_path, source_dict, reference_dict, beam_size,
-                    window_size, do_beam, save_path):
+def get_BLEU_of_checkpoints(checkpoint_path: str, source_data_path: str, reference_data_path: str, source_dict: Dictionary, reference_dict: Dictionary, beam_size: int,
+                    window_size: int, do_beam: bool, save_path: str):
+    #load data
     source_data = load_data(source_data_path)
     reference_data = load_data(reference_data_path)
-    #ppl_file_paths = glob.glob(f"{checkpoint_path}/*.ppl")
+    #get all model file paths in checkpoint path
     model_file_paths = glob.glob(f"{checkpoint_path}/*.pth")
-    # ppl_file_paths.sort()
+    #sort for chronological order of checkpoints, if not already
     model_file_paths.sort()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     data_points = []
-    for i, model_path in enumerate(model_file_paths):
-        '''ppl_file = open(ppl_path,"r")
-        ppl = ppl_file.read()
-        ppl_file.close()'''
-        print(i)
+    for model_path in model_file_paths:
         model = torch.load(model_path, map_location=device)
+        #get bleu of model
         bleu_score = get_bleu_of_model(model, source_data, reference_data, source_dict, reference_dict, beam_size,
                                        window_size, do_beam)
 
@@ -91,6 +89,7 @@ def get_ppl_on_model(model: nn.Module, eval_data_set_path):
         ppl_list.append(batch_perplexity)
         print(step_counter / len(eval_dataloader))
     print(sum(ppl_list) / len(ppl_list))
+    #return averaeg ppl over one epoch
     return sum(ppl_list) / len(ppl_list)
 
 

@@ -19,7 +19,12 @@ def _count_correct_predictions(pred, L):
 
 
 def train(train_path: str, validation_path: str, config: Hyperparameters, max_epochs=100,
-          shuffle=True, num_workers=4, val_rate=100, train_eval_rate=10):
+          shuffle=True, num_workers=4, val_rate=100, train_eval_rate=10, random_seed=None, model_name = ""):
+
+    if random_seed is not None:
+        torch.manual_seed(random_seed)
+
+
     lr = config.learning_rate
     batch_size = config.batch_size
 
@@ -31,13 +36,16 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
     print("Number of Batches: " + str(len(train_dataloader)))
     print("Batch Size: " + str(batch_size))
 
-    validation_set: TranslationDataset = TranslationDataset.load(validation_path)
-    validation_dataloader = DataLoader(validation_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+    #validation_set: TranslationDataset = TranslationDataset.load(validation_path)
+    #validation_dataloader = DataLoader(validation_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+
+
+
+
 
     model = BasicNet(train_set.get_source_dict_size(), train_set.get_target_dict_size(), config,
-                     window_size=train_set.get_window_size()).to(device)
-
-    if config.saved_model != "":
+                     window_size=train_set.get_window_size(), model_name=model_name).to(device)
+    if config.saved_model != "" and random_seed is None:
         model = torch.load(config.saved_model)
 
     optimizer = config.optimizer(model.parameters(), lr=lr)
@@ -66,11 +74,10 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
         per_epoch = False
 
     epoch_count = -(max_epochs % checkpoints_rate)
-
     print("\n        Starting Training: \n")
     for epoch in range(max_epochs):
         if per_epoch and epoch_count == checkpoints_rate:
-            save_checkpoint(model)
+            save_checkpoint(model, model.model_name)
             epoch_count = 0
         steps = 0
 
@@ -78,7 +85,7 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
 
         for S, T, L in train_dataloader:
             if per_batch and batch_count == (len(train_dataloader) // checkpoints_rate):
-                save_checkpoint(model)
+                save_checkpoint(model, model.model_name)
                 batch_count = 0
 
             S = S.to(device)
@@ -103,7 +110,6 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
             true_batch_size = L.size(0)
             batch_accuracy = batch_correct_predictions / true_batch_size
             batch_perplexity = torch.exp(loss)
-
             if per_batch:
                 batch_count += 1
 
@@ -115,7 +121,8 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
                 print()
 
             # evaluate model every k updates
-            if total_steps % val_rate == 0:
+            ''' 
+           if total_steps % val_rate == 0:
                 model.eval()
 
                 total_val_loss = 0
@@ -157,8 +164,8 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
                 print()
 
                 model.train()
-
+'''
         if per_epoch:
             epoch_count += 1
 
-    save_checkpoint(model)
+    save_checkpoint(model, model_name)
