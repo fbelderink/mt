@@ -36,12 +36,8 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
     print("Number of Batches: " + str(len(train_dataloader)))
     print("Batch Size: " + str(batch_size))
 
-    #validation_set: TranslationDataset = TranslationDataset.load(validation_path)
-    #validation_dataloader = DataLoader(validation_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
-
-
-
-
+    validation_set: TranslationDataset = TranslationDataset.load(validation_path)
+    validation_dataloader = DataLoader(validation_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
 
     model = BasicNet(train_set.get_source_dict_size(), train_set.get_target_dict_size(), config,
                      window_size=train_set.get_window_size(), model_name=model_name).to(device)
@@ -121,8 +117,7 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
                 print()
 
             # evaluate model every k updates
-            ''' 
-           if total_steps % val_rate == 0:
+            if total_steps % val_rate == 0:
                 model.eval()
 
                 total_val_loss = 0
@@ -164,7 +159,7 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
                 print()
 
                 model.train()
-'''
+
         if per_epoch:
             epoch_count += 1
 

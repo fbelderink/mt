@@ -30,17 +30,16 @@ def getseeds():
 
 def execute_runs():
     for name, seed in zip(["A", "B", "C"], getseeds()):
-        train("data/train7k-w3.pt",
-              None,
+        train("data/train7k_w3.pt",
+              "data/val7k_w3.pt",
               Hyperparameters(ConfigLoader("configs/best_config.yaml").get_config()),
               max_epochs=5,
               shuffle=True,
               num_workers=4,
-              val_rate=100,
+              val_rate=0,
               train_eval_rate=10,
               random_seed=seed,
-              model_name=name,
-              save_ppl=True)
+              model_name=name)
 
 
 def get_bleu_of_checkpoints(checkpoint_path: str,

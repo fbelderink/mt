@@ -47,6 +47,7 @@ def translate(model: nn.Module,
             pred += torch.tensor(top_k_values).unsqueeze(1).to(device)
 
             # flatten predictions to get top k along all previous top k predictions
+            # (1, beam_size * vocab_size)
             pred = pred.reshape((1, beam_targets.shape[0] * pred.shape[-1]))
 
             # get top k predictions
