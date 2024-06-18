@@ -43,7 +43,7 @@ def execute_runs():
               save_ppl=True)
 
 
-def get_BLEU_of_checkpoints(checkpoint_path: str,
+def get_bleu_of_checkpoints(checkpoint_path: str,
                             source_data_path: str,
                             reference_data_path: str,
                             source_dict: Dictionary,
