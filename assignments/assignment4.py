@@ -42,25 +42,55 @@ def test_greedy_search(model: nn.Module, source_data: List[List[str]], source_di
     return post_processed_sentences
 
 
-def test_get_scores(model: nn.Module, source_data: List[List[str]], target_data: List[List[str]],
-                    source_dict: Dictionary, target_dict: Dictionary, window_size: int):
-    scores = get_scores(model, source_data, target_data, source_dict, target_dict, window_size)
+def test_get_scores(model: nn.Module,
+                    source_data: List[List[str]],
+                    target_data: List[List[str]],
+                    source_dict: Dictionary,
+                    target_dict: Dictionary,
+                    window_size: int):
+    scores = get_scores(model,
+                        source_data,
+                        target_data,
+                        source_dict,
+                        target_dict,
+                        window_size)
 
     print(np.max(scores))
     print(len(scores))
 
 
-def test_model_bleu(model: nn.Module, source_data: List[List[str]], reference_data: List[List[str]],
-                    source_dict: Dictionary, target_dict: Dictionary, beam_size: int, window_size: int,
-                    do_beam_search, translations: List[List[str]], use_torch_bleu=False):
-    bleu_score = get_bleu_of_model(model, source_data, reference_data, source_dict, target_dict, beam_size, window_size,
-                                   do_beam_search, translations, use_torch_bleu=use_torch_bleu)
+def test_model_bleu(model: nn.Module,
+                    source_data: List[List[str]],
+                    reference_data: List[List[str]],
+                    source_dict: Dictionary,
+                    target_dict: Dictionary,
+                    beam_size: int,
+                    window_size: int,
+                    do_beam_search,
+                    translations: List[List[str]],
+                    use_torch_bleu=False):
+
+    bleu_score = get_bleu_of_model(model,
+                                   source_data,
+                                   reference_data,
+                                   source_dict,
+                                   target_dict,
+                                   beam_size,
+                                   window_size,
+                                   do_beam_search,
+                                   translations,
+                                   use_torch_bleu=use_torch_bleu)
     print(f"Model BLEU: {bleu_score}")
 
 
-def determine_models_bleu(models_path: str, source_data: List[List[str]], reference_data: List[List[str]],
-                          source_dict: Dictionary, target_dict: Dictionary, beam_size: int, window_size: int,
+def determine_models_bleu(models_path: str,
+                          source_data: List[List[str]],
+                          reference_data: List[List[str]],
+                          source_dict: Dictionary,
+                          target_dict: Dictionary,
+                          beam_size: int, window_size: int,
                           do_beam_search):
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     directory = os.fsencode(models_path)
 
@@ -73,8 +103,15 @@ def determine_models_bleu(models_path: str, source_data: List[List[str]], refere
             print(f"determine bleu of {model_path}")
             model = torch.load(model_path, map_location=device)
 
-            bleu_score = get_bleu_of_model(model, source_data, reference_data, source_dict, target_dict, beam_size,
-                                           window_size, do_beam_search, None)
+            bleu_score = get_bleu_of_model(model,
+                                           source_data,
+                                           reference_data,
+                                           source_dict,
+                                           target_dict,
+                                           beam_size,
+                                           window_size,
+                                           do_beam_search,
+                                           None)
 
             print(f"Model BLEU: {bleu_score}")
             scores.append((bleu_score, model_path))
