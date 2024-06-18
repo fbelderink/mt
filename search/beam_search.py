@@ -81,6 +81,6 @@ def translate(model: nn.Module,
         if not get_n_best:
             target_sentences.append(get_target_string(top_k_indices[np.argmax(top_k_values)][window_size:]).tolist())
         else:
-            target_sentences.append(get_target_string(top_k_indices[:, window_size:]).tolist())
+            target_sentences.append(get_target_string([indices[window_size:] for indices in top_k_indices]).tolist())
 
     return target_sentences

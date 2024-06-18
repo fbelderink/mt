@@ -5,6 +5,8 @@ import numpy as np
 from typing import List
 from preprocessing.fragment import create_source_window_matrix
 
+from search.beam_search import translate as beam_translate
+
 
 def translate(model: nn.Module,
               source_data: List[List[str]],
@@ -12,7 +14,7 @@ def translate(model: nn.Module,
               target_dict: Dictionary,
               window_size: int,
               alignment_factor=1):
-
+    """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     model.to(device)
@@ -65,3 +67,5 @@ def translate(model: nn.Module,
         target_sentences.append(translated_sentence)
 
     return target_sentences
+    """
+    return beam_translate(model, source_data, source_dict, target_dict, 1, window_size, False, alignment_factor)

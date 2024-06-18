@@ -69,21 +69,22 @@ if __name__ == "__main__":
 
     model = torch.load("eval/best_models/bleu28_6_w3.pth", map_location=device)
 
-    #translations = test_beam_search(model, data_de_dev, dict_de, dict_en, 50, model.window_size, get_n_best=False)
+    #translations = test_beam_search(model, data_de_dev, dict_de, dict_en, 3, model.window_size, get_n_best=True)
+
     translations = load_data("eval/translations/best_translations")
 
     #translations = test_greedy_search(model, data_de_dev, dict_de, dict_en, model.window_size)
 
     #test_get_scores(model, data_de_dev, data_en_dev, dict_de, dict_en, model.window_size)
 
-    #test_model_bleu(model, data_de_dev, data_en_dev, dict_de, dict_en,
-    #                3,  model.window_size, args.do_beam_search, None)
+    test_model_bleu(model, data_de_dev, data_en_dev, dict_de, dict_en,
+                    3,  model.window_size, args.do_beam_search, translations, use_torch_bleu=True)
 
     #bleus = determine_models_bleu('eval/checkpoints/2024-06-12', data_de_dev, data_en_dev, dict_de, dict_en,
     #                              3, model.window_size, True)
     #print(f"Best model: {max(bleus)}")
 
-    our_score_avg, ref_score_avg = eval_scores(model, data_de_dev, data_en_dev, dict_de, dict_en,
-                                               translations=translations)
+    #our_score_avg, ref_score_avg = eval_scores(model, data_de_dev, data_en_dev, dict_de, dict_en,
+    #                                           translations=translations)
 
-    print(our_score_avg, ref_score_avg)
+    #print(our_score_avg, ref_score_avg)
