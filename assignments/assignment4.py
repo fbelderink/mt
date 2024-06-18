@@ -16,7 +16,12 @@ def test_beam_search(model: nn.Module, source_data: List[List[str]], source_dict
                      target_dict: Dictionary, beam_size: int, window_size: int, get_n_best=True):
     target_sentences = translate(model, source_data, source_dict, target_dict, beam_size, window_size, get_n_best)
 
-    post_processed_sentences = undo_prepocessing(target_sentences)
+    if get_n_best:
+        post_processed_sentences = []
+        for sentences in target_sentences:
+            post_processed_sentences.append(undo_prepocessing(sentences))
+    else:
+        post_processed_sentences = undo_prepocessing(target_sentences)
 
     if not get_n_best:
         save_data("eval/translations/beam_translations", post_processed_sentences)
@@ -47,9 +52,9 @@ def test_get_scores(model: nn.Module, source_data: List[List[str]], target_data:
 
 def test_model_bleu(model: nn.Module, source_data: List[List[str]], reference_data: List[List[str]],
                     source_dict: Dictionary, target_dict: Dictionary, beam_size: int, window_size: int,
-                    do_beam_search, translations: List[List[str]]):
+                    do_beam_search, translations: List[List[str]], use_torch_bleu=False):
     bleu_score = get_bleu_of_model(model, source_data, reference_data, source_dict, target_dict, beam_size, window_size,
-                                   do_beam_search, translations)
+                                   do_beam_search, translations, use_torch_bleu=use_torch_bleu)
     print(f"Model BLEU: {bleu_score}")
 
 
