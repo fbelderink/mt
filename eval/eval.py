@@ -2,6 +2,7 @@ import random
 
 import torch
 
+from postprocessing.postprocessing import undo_prepocessing
 from utils.hyperparameters import Hyperparameters
 from utils.ConfigLoader import ConfigLoader
 from training.train import train
@@ -15,68 +16,55 @@ from preprocessing.dictionary import Dictionary
 from preprocessing.dataset import TranslationDataset
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
+
+
 def getseeds():
     seeds = []
     for i in range(3):
-        seeds.append(random.randint(-(1e10),1e10))
+        seeds.append(random.randint(-(1e10), 1e10))
     if seeds[0] == seeds[1] or seeds[0] == seeds[2] or seeds[1] == seeds[2]:
         return getseeds()
     else:
         return seeds
 
 
-def exectute_runs():
+def execute_runs():
     for name, seed in zip(["A", "B", "C"], getseeds()):
-        train("data/train7k-w3.pt", None, Hyperparameters(ConfigLoader("configs/best_config.yaml").get_config()), max_epochs=5,
-          shuffle=True, num_workers=4, val_rate=100, train_eval_rate=10, random_seed=seed, model_name = name, save_ppl = True)
+        train("data/train7k-w3.pt", None, Hyperparameters(ConfigLoader("configs/best_config.yaml").get_config()),
+              max_epochs=5,
+              shuffle=True, num_workers=4, val_rate=100, train_eval_rate=10, random_seed=seed, model_name=name,
+              save_ppl=True)
 
-def evaluate_scores(checkpoint_path, source_data_path, reference_data_path, source_dict, reference_dict, beam_size, window_size, do_beam, save_path):
+
+def evaluate_scores(checkpoint_path, source_data_path, reference_data_path, source_dict, reference_dict, beam_size,
+                    window_size, do_beam, save_path):
     source_data = load_data(source_data_path)
     reference_data = load_data(reference_data_path)
     #ppl_file_paths = glob.glob(f"{checkpoint_path}/*.ppl")
     model_file_paths = glob.glob(f"{checkpoint_path}/*.pth")
-   # ppl_file_paths.sort()
+    # ppl_file_paths.sort()
     model_file_paths.sort()
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    data_points =[]
-    for i,model_path in enumerate(model_file_paths):
+    data_points = []
+    for i, model_path in enumerate(model_file_paths):
         '''ppl_file = open(ppl_path,"r")
         ppl = ppl_file.read()
         ppl_file.close()'''
         print(i)
         model = torch.load(model_path, map_location=device)
-        bleu_score = get_bleu_of_model(model, source_data, reference_data, source_dict, reference_dict, beam_size, window_size, do_beam)
-
+        bleu_score = get_bleu_of_model(model, source_data, reference_data, source_dict, reference_dict, beam_size,
+                                       window_size, do_beam)
 
         data_points.append(bleu_score)
     print(data_points)
-    file = open(save_path,"w")
+    file = open(save_path, "w")
     for entry in data_points:
         file.write(f" {entry} \n")
     file.close()
     return data_points
 
 
-def getScoresForEval():
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = torch.load("eval/checkpoints/best_model/15_01_58.pth", map_location=device)
-    source_data = load_data("data/raw/multi30k.dev.de")
-    target_data =  load_data("data/raw/multi30k.dev.en")
-    source_dict = Dictionary.load("eval/dict_de.pkl")
-    target_dict = Dictionary.load("eval/dict_en.pkl")
-    beam_size = 3
-    window_size = 3
-    our_translations = beam_search.translate(model, source_data, source_dict, target_dict, beam_size, window_size)
-    reference_score = score.get_scores(model, source_data, target_data,source_dict, target_dict,window_size)
-    our_score = score.get_scores(model, source_data, our_translations,source_dict, target_dict,window_size)
-    print(sum(our_score)/len(our_score))
-    print(sum(reference_score)/len(reference_score))
-
-
-def getPPLonModel(model: nn.Module, eval_data_set_path,
-               source_dict: Dictionary, target_dict: Dictionary, window_size: int):
-
-
+def get_ppl_on_model(model: nn.Module, eval_data_set_path):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     eval_set: TranslationDataset = TranslationDataset.load(eval_data_set_path)
@@ -84,11 +72,10 @@ def getPPLonModel(model: nn.Module, eval_data_set_path,
     step_counter = 0
     ppl_list = []
 
-    for S,T,L in eval_dataloader:
+    for S, T, L in eval_dataloader:
         S = S.to(device)
         T = T.to(device)
         L = L.long().to(device)
-
 
         pred = model(S, T)
 
@@ -97,49 +84,58 @@ def getPPLonModel(model: nn.Module, eval_data_set_path,
         loss.backward()
 
         # keep track of metrics
-        step_counter +=1
+        step_counter += 1
 
         # print batch metrics
         batch_perplexity = float(torch.exp(loss))
         ppl_list.append(batch_perplexity)
-        print(step_counter/len(eval_dataloader))
-    print(sum(ppl_list)/len(ppl_list))
-    return sum(ppl_list)/len(ppl_list)
+        print(step_counter / len(eval_dataloader))
+    print(sum(ppl_list) / len(ppl_list))
+    return sum(ppl_list) / len(ppl_list)
 
 
-def get_ppl_on_checkpoint(checkpoint_path: str, eval_data_set_path,
-               source_dict: Dictionary, target_dict: Dictionary, window_size: int, save_path: str):
+def get_ppl_on_checkpoint(checkpoint_path: str, eval_data_set_path, save_path: str):
     model_file_paths = glob.glob(f"{checkpoint_path}/*.pth")
     model_file_paths.sort()
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     ppl_list = []
-    for i,model_path in enumerate(model_file_paths):
+    for i, model_path in enumerate(model_file_paths):
         print(i)
         model = torch.load(model_path)
-        ppl_list.append(getPPLonModel(model, eval_data_set_path,source_dict,target_dict,window_size))
+        ppl_list.append(get_ppl_on_model(model, eval_data_set_path))
     print(ppl_list)
+
     file = open(save_path, "w")
     for ppl in ppl_list:
         file.write(f"{ppl} \n")
     file.close()
+
     return ppl_list
 
 
-def plotData(data_files_list: List[str], data_description: str,save_path: str):
+def plot_data(data_files_list: List[str], data_description: str, save_path: str):
     data_lists = []
-    for i,file_path in enumerate(data_files_list):
+    for i, file_path in enumerate(data_files_list):
         data = load_data(file_path)
         data = [float(x[0]) for x in data]
         data_lists.append(data)
-    x_points = [x for x in range(1,len(data_lists[0])+1)]
+    x_points = [x for x in range(1, len(data_lists[0]) + 1)]
     print(data_lists[0])
     plt.figure(figsize=(10, 6))
-    colors = ["b","r","g"]
+    colors = ["b", "r", "g"]
     for i, ydata in enumerate(data_lists):
-        plt.plot(x_points, ydata,marker='o', linestyle='-', color=colors[i])
+        plt.plot(x_points, ydata, marker='o', linestyle='-', color=colors[i])
     plt.xlabel('Checkpoint')
     plt.ylabel(data_description)
     plt.grid(True)
     plt.savefig(save_path)
 
 
+def eval_scores(model: nn.Module, source_data: List[List[str]], target_data: List[List[str]],
+                source_dict: Dictionary, target_dict: Dictionary, beam_size=3, translations=None):
+    if translations is None:
+        translations = beam_search.translate(model, source_data, source_dict, target_dict, beam_size, model.window_size)
+        translations = undo_prepocessing(translations)  #get_scores expects no bpe applied data
+
+    reference_score = score.get_scores(model, source_data, target_data, source_dict, target_dict, model.window_size)
+    our_score = score.get_scores(model, source_data, translations, source_dict, target_dict, model.window_size)
+    return sum(our_score) / len(our_score), sum(reference_score) / len(reference_score)

@@ -9,6 +9,7 @@ from utils.ConfigLoader import ConfigLoader
 from utils.hyperparameters import Hyperparameters
 import pickle
 from metrics.metrics import BLEU
+from eval.eval import eval_scores
 
 
 def _parse_arguments() -> argparse.Namespace:
@@ -75,9 +76,14 @@ if __name__ == "__main__":
 
     #test_get_scores(model, data_de_dev, data_en_dev, dict_de, dict_en, model.window_size)
 
-    test_model_bleu(model, data_de_dev, data_en_dev, dict_de, dict_en,
-                    50,  model.window_size, args.do_beam_search, translations)
+    #test_model_bleu(model, data_de_dev, data_en_dev, dict_de, dict_en,
+    #                3,  model.window_size, args.do_beam_search, None)
 
     #bleus = determine_models_bleu('eval/checkpoints/2024-06-12', data_de_dev, data_en_dev, dict_de, dict_en,
     #                              3, model.window_size, True)
     #print(f"Best model: {max(bleus)}")
+
+    our_score_avg, ref_score_avg = eval_scores(model, data_de_dev, data_en_dev, dict_de, dict_en,
+                                               translations=translations)
+
+    print(our_score_avg, ref_score_avg)

@@ -56,15 +56,16 @@ def translate(model: nn.Module,
                 # only applies in first iteration, when beam targets have one dim only
                 beam_targets = beam_targets.repeat(beam_size, 1)
 
+            # we flattened the prediction vector, so find out to which previous predictions new top k indices belong
+            previous_indices = [i // len(target_dict) for i in top_k.indices.squeeze(0).tolist()]
+
+            # get indices in target vocab range (also has to happen because of flattening)
+            current_indices = [i % len(target_dict) for i in top_k.indices.squeeze(0).tolist()]
+
             # init list to record new top k predictions
             new_top_k_indices = []
+
             for i in range(beam_size):
-                # we flattened the prediction vector, so find out to which previous predictions new top k indices belong
-                previous_indices = [i // len(target_dict) for i in top_k.indices.squeeze(0).tolist()]
-
-                # get index in target vocab range (also has to happen because of flattening)
-                current_indices = [i % len(target_dict) for i in top_k.indices.squeeze(0).tolist()]
-
                 # select correct previous list and add new index
                 new_top_k_indices.append(top_k_indices[previous_indices[i]] + [current_indices[i]])
 
@@ -73,7 +74,7 @@ def translate(model: nn.Module,
 
             # record current best values
             top_k_values = top_k.values.squeeze(0).tolist()
-            # replace top k indices whit newly found best indices
+            # replace top k indices with newly found best indices
             top_k_indices = new_top_k_indices
 
         # get target translation (first window_size entries are sos)
