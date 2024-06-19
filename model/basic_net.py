@@ -2,17 +2,13 @@ import torch.nn as nn
 from model.layers.linear import LinearLayer
 import torch
 import math
-from utils.hyperparameters import Hyperparameters
+from utils.hyperparameters import FFHyperparameters
 
 
 class BasicNet(nn.Module):
-    def __init__(self, source_dict_size, target_dict_size, config: Hyperparameters, window_size, model_name = ""):
+    def __init__(self, source_dict_size, target_dict_size,
+                 config: FFHyperparameters, window_size, model_name="basic_net"):
         super(BasicNet, self).__init__()
-        """
-        TODO: 
-        - eigener Linear layer verwenden
-        - add Batch norm
-        """
         # hyperparameters
         self.embed_dim = config.dimensions[0]
         self.hidden_dim_1 = config.dimensions[1]

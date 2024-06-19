@@ -4,9 +4,11 @@ from assignments.assignment1 import *
 from assignments.assignment3 import *
 from assignments.assignment2 import *
 from assignments.assignment4 import *
+from assignments.assignment5 import generate_dataset as gen_rnn_dataset
 import training.train as train
+from preprocessing.dataset import TranslationDataset, RNNTranslationDataset
 from utils.ConfigLoader import ConfigLoader
-from utils.hyperparameters import Hyperparameters
+from utils.hyperparameters import FFHyperparameters
 import pickle
 from metrics.metrics import BLEU
 from eval.eval import eval_scores
@@ -56,29 +58,29 @@ if __name__ == "__main__":
     #                 dict_de=dict_de, dict_en=dict_en, save_path=f'data/val7k_w{args.window_size}.pt')
     #test_dataset_load(f'data/val7k_w{args.window_size}.pt')
 
-    #model_hyperparameters = Hyperparameters(ConfigLoader("configs/config.yaml").get_config())
+    model_hyperparameters = FFHyperparameters(ConfigLoader("configs/ff/config.yaml").get_config())
 
-    #train.train(f"data/train7k_w{model_hyperparameters.window_size}.pt",
-    #            f"data/val7k_w{model_hyperparameters.window_size}.pt",
-    #            model_hyperparameters,
-    #            val_rate=400,
-    #            train_eval_rate=200,
-    #            num_workers=2)
+    train.train(f"data/train7k_w{model_hyperparameters.window_size}.pt",
+                f"data/val7k_w{model_hyperparameters.window_size}.pt",
+                model_hyperparameters,
+                val_rate=400,
+                train_eval_rate=200,
+                num_workers=2)
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    model = torch.load("eval/best_models/bleu28_6_w3.pth", map_location=device)
+    #model = torch.load("eval/best_models/bleu28_6_w3.pth", map_location=device)
 
     #translations = test_beam_search(model, data_de_dev, dict_de, dict_en, 3, model.window_size, get_n_best=True)
 
-    translations = load_data("eval/translations/best_translations")
+    #translations = load_data("eval/translations/best_translations")
 
     #translations = test_greedy_search(model, data_de_dev, dict_de, dict_en, model.window_size)
 
     #test_get_scores(model, data_de_dev, data_en_dev, dict_de, dict_en, model.window_size)
 
-    test_model_bleu(model, data_de_dev, data_en_dev, dict_de, dict_en,
-                    3,  model.window_size, args.do_beam_search, translations, use_torch_bleu=True)
+    #test_model_bleu(model, data_de_dev, data_en_dev, dict_de, dict_en,
+    #                3,  model.window_size, args.do_beam_search, translations, use_torch_bleu=True)
 
     #bleus = determine_models_bleu('eval/checkpoints/2024-06-12', data_de_dev, data_en_dev, dict_de, dict_en,
     #                              3, model.window_size, True)

@@ -1,9 +1,11 @@
 import torch
 from torch.utils.data import DataLoader
 from model.basic_net import BasicNet
+from model.recurrent_net import RecurrentNet
 from preprocessing.dataset import TranslationDataset
-from utils.hyperparameters import Hyperparameters
-from multiprocessing import freeze_support
+from utils.ConfigLoader import ConfigLoader
+from utils.hyperparameters import Hyperparameters, RNNHyperparameters, FFHyperparameters
+import argparse
 
 from utils.file_manipulation import save_checkpoint
 
@@ -19,28 +21,35 @@ def _count_correct_predictions(pred, L):
 
 
 def train(train_path: str, validation_path: str, config: Hyperparameters, max_epochs=100,
-          shuffle=True, num_workers=4, val_rate=100, train_eval_rate=10, random_seed=None, model_name = ""):
-
+          shuffle=True, num_workers=2, val_rate=100, train_eval_rate=10, random_seed=None,
+          model_name=""):
     if random_seed is not None:
         torch.manual_seed(random_seed)
-
 
     lr = config.learning_rate
     batch_size = config.batch_size
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f"training on {device}")
-
-    train_set: TranslationDataset = TranslationDataset.load(train_path)
+    train_set = TranslationDataset.load(train_path)
     train_dataloader = DataLoader(train_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
     print("Number of Batches: " + str(len(train_dataloader)))
     print("Batch Size: " + str(batch_size))
 
-    validation_set: TranslationDataset = TranslationDataset.load(validation_path)
+    validation_set = TranslationDataset.load(validation_path)
     validation_dataloader = DataLoader(validation_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
 
-    model = BasicNet(train_set.get_source_dict_size(), train_set.get_target_dict_size(), config,
-                     window_size=train_set.get_window_size(), model_name=model_name).to(device)
+    if isinstance(config, RNNHyperparameters):
+        model = RecurrentNet(train_set.get_source_dict_size(), train_set.get_target_dict_size(), config,
+                             model_name=model_name).to(device)
+        print("train rnn")
+    elif isinstance(config, FFHyperparameters):
+        model = BasicNet(train_set.get_source_dict_size(), train_set.get_target_dict_size(), config,
+                         window_size=train_set.get_window_size(), model_name=model_name).to(device)
+        print("train ff")
+    else:
+        raise ValueError
+
     if config.saved_model != "" and random_seed is None:
         model = torch.load(config.saved_model)
 
@@ -151,7 +160,7 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
                         param_group['lr'] = param_group['lr'] / 2
                     print("learning rate halfed; new learning rate: " + str(optimizer.param_groups[0]['lr']))
                 elif config.early_stopping and 0 < previous_validation_perplexity <= validation_perplexity:
-                    save_checkpoint(model)
+                    save_checkpoint(model, model.model_name)
                     print("early stop, because model perplexity exceeded")
                     return
 
@@ -164,3 +173,48 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
             epoch_count += 1
 
     save_checkpoint(model, model_name)
+
+
+def _parse_arguments() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-tp', '--train_path', type=str)
+    parser.add_argument('-vp', '--validation_path', type=str)
+    parser.add_argument('-cp', '--config_path', type=str)
+    parser.add_argument('-vr', '--val_rate', type=int)
+    parser.add_argument('-ter', '--train_eval_rate', type=int)
+    parser.add_argument('-s', '--shuffle', type=bool, default=True)
+    parser.add_argument('-nw', '--num_workers', type=int, default=2)
+    parser.add_argument('-me', '--max_epochs', type=int, default=100)
+    parser.add_argument('-rnn', '--train_rnn', type=bool)
+
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = _parse_arguments()
+
+    config = ConfigLoader(args.config_path).get_config()
+
+    if args.train_rnn:
+        model_hyperparameters = RNNHyperparameters(config)
+
+        train(args.train_path,
+              args.validation_path,
+              model_hyperparameters,
+              max_epochs=args.max_epochs,
+              val_rate=args.val_rate,
+              train_eval_rate=args.train_eval_rate,
+              shuffle=args.shuffle,
+              num_workers=args.num_workers)
+    else:
+        model_hyperparameters = FFHyperparameters(config)
+
+        train(args.train_path,
+              args.validation_path,
+              model_hyperparameters,
+              max_epochs=args.max_epochs,
+              val_rate=args.val_rate,
+              train_eval_rate=args.train_eval_rate,
+              shuffle=args.shuffle,
+              num_workers=args.num_workers)

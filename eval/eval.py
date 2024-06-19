@@ -3,7 +3,7 @@ import random
 import torch
 
 from postprocessing.postprocessing import undo_prepocessing
-from utils.hyperparameters import Hyperparameters
+from utils.hyperparameters import FFHyperparameters
 from utils.ConfigLoader import ConfigLoader
 from training.train import train
 import glob
@@ -32,7 +32,7 @@ def execute_runs():
     for name, seed in zip(["A", "B", "C"], getseeds()):
         train("data/train7k_w3.pt",
               "data/val7k_w3.pt",
-              Hyperparameters(ConfigLoader("configs/best_config.yaml").get_config()),
+              FFHyperparameters(ConfigLoader("configs/best_config.yaml").get_config()),
               max_epochs=5,
               shuffle=True,
               num_workers=4,

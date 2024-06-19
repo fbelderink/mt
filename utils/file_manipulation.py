@@ -73,7 +73,7 @@ def load_model(path: str, model: nn.Module) -> nn.Module:
 def save_checkpoint(model: nn.Module, model_name):
     date = datetime.today().strftime('%Y-%m-%d')
     time = datetime.today().strftime('%H_%M_%S')
-    print("\n saving checkpoint at "+ f"eval/checkpoints/{date}-{model_name}/{time}.pth" + "\n")
+    print("\n saving checkpoint at " + f"eval/checkpoints/{date}-{model_name}/{time}.pth" + "\n")
     Path(f"eval/checkpoints/{date}-{model_name}").mkdir(exist_ok=True)
     torch.save(model, f"eval/checkpoints/{date}-{model_name}/{time}.pth")
 
