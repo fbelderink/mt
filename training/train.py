@@ -1,6 +1,6 @@
 import torch
 from torch.utils.data import DataLoader
-from model.basic_net import BasicNet
+from model.feedforward_net import FeedforwardNet
 from model.recurrent_net import RecurrentNet
 from preprocessing.dataset import TranslationDataset
 from utils.ConfigLoader import ConfigLoader
@@ -42,11 +42,9 @@ def train(train_path: str, validation_path: str, config: Hyperparameters, max_ep
     if isinstance(config, RNNHyperparameters):
         model = RecurrentNet(train_set.get_source_dict_size(), train_set.get_target_dict_size(), config,
                              model_name=model_name).to(device)
-        print("train rnn")
     elif isinstance(config, FFHyperparameters):
-        model = BasicNet(train_set.get_source_dict_size(), train_set.get_target_dict_size(), config,
+        model = FeedforwardNet(train_set.get_source_dict_size(), train_set.get_target_dict_size(), config,
                          window_size=train_set.get_window_size(), model_name=model_name).to(device)
-        print("train ff")
     else:
         raise ValueError
 
@@ -187,6 +185,7 @@ def _parse_arguments() -> argparse.Namespace:
     parser.add_argument('-nw', '--num_workers', type=int, default=2)
     parser.add_argument('-me', '--max_epochs', type=int, default=100)
     parser.add_argument('-rnn', '--train_rnn', type=bool)
+    parser.add_argument('-mn', '--model_name', type=str)
 
     return parser.parse_args()
 
@@ -206,7 +205,8 @@ if __name__ == "__main__":
               val_rate=args.val_rate,
               train_eval_rate=args.train_eval_rate,
               shuffle=args.shuffle,
-              num_workers=args.num_workers)
+              num_workers=args.num_workers,
+              model_name=args.model_name)
     else:
         model_hyperparameters = FFHyperparameters(config)
 
@@ -217,4 +217,5 @@ if __name__ == "__main__":
               val_rate=args.val_rate,
               train_eval_rate=args.train_eval_rate,
               shuffle=args.shuffle,
-              num_workers=args.num_workers)
+              num_workers=args.num_workers,
+              model_name=args.model_name)

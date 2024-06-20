@@ -1,11 +1,11 @@
-import torch
 import torch.nn as nn
+from model.basic_net import BasicNet
 from utils.hyperparameters import RNNHyperparameters
 
 
-class RecurrentNet(nn.Module):
+class RecurrentNet(BasicNet):
     def __init__(self, source_dict_size, target_dict_size, config: RNNHyperparameters, model_name="rnn"):
-        super(RecurrentNet, self).__init__()
+        super(RecurrentNet, self).__init__(source_dict_size, target_dict_size, config, model_name)
 
         #hyperparameters
         self.embed_dim = config.encoder_parameters[0]
@@ -13,13 +13,9 @@ class RecurrentNet(nn.Module):
         self.encoder_layers = config.encoder_parameters[2]
         self.encoder_dropout = config.encoder_parameters[3]
 
-        self.model_name = model_name
         self.decoder_hidden_dim = config.decoder_parameters[0]
         self.decoder_layers = config.decoder_parameters[1]
         self.decoder_dropout = config.decoder_parameters[2]
-
-        self.source_dict_size = source_dict_size
-        self.target_dict_size = target_dict_size
 
         self.source_embedding = nn.Embedding(self.source_dict_size, self.embed_dim)
 
@@ -49,14 +45,5 @@ class RecurrentNet(nn.Module):
 
         return 0
 
-
     def compute_loss(self, pred, label):
         pass
-
-    def print_structure(self):
-        print("total number of trainable parameters: " + str(
-            sum(p.numel() for p in self.parameters() if p.requires_grad)))
-        print("Layers:")
-        for name, module in self.named_children():
-            if not isinstance(module, nn.CrossEntropyLoss):
-                print(f"{name}: {module}")
