@@ -1,12 +1,12 @@
 import torch.nn as nn
 import abc
-from utils.hyperparameters import Hyperparameters
+from utils.model_hyperparameters import ModelHyperparameters
 
 
 class BasicNet(nn.Module):
 
     def __init__(self, source_dict_size, target_dict_size,
-                 config: Hyperparameters, model_name=""):
+                 config: ModelHyperparameters, model_name=""):
         super(BasicNet, self).__init__()
 
         self.source_dict_size = source_dict_size
