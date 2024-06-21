@@ -1,16 +1,9 @@
 encoder_parameters:
-  embed_dim: 200
-  hidden_dim: 200
-  num_layers: 200
-  dropout_rate: 0
+  embed_dim: 100
+  dropout_rate: 0.0
 decoder_parameters:
-  hidden_dime: 200
-  num_layers: 200
-  dropout_rate: 0
-optimizer: "Adam"
-learning_rate: 0.01
-batch_size: 200
-checkpoints_per_epoch: 6
-load_model_path: ""
-half_lr: True
-early_stopping: False
+  embed_dim: 100
+  dropout_rate: 0.0
+lstm_layers: 1
+lstm_hidden_dim: 10
+lstm_bidirectional: True
