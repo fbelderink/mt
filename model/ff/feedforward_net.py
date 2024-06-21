@@ -2,7 +2,7 @@ import torch.nn as nn
 from model.layers.linear import LinearLayer
 from model.basic_net import BasicNet
 import torch
-from utils.model_hyperparameters import FFModelHyperparameters
+from utils.hyperparameters.model_hyperparameters import FFModelHyperparameters
 
 
 class FeedforwardNet(BasicNet):

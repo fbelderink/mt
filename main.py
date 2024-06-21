@@ -1,14 +1,6 @@
 import argparse
-from utils.file_manipulation import load_data, save_checkpoint
 from assignments.assignment1 import *
-from assignments.assignment3 import *
-from assignments.assignment2 import *
 from assignments.assignment4 import *
-from preprocessing.dataset import TranslationDataset, RNNTranslationDataset
-from utils.ConfigLoader import ConfigLoader
-import pickle
-from metrics.metrics import BLEU
-from eval.eval import eval_scores
 
 
 def _parse_arguments() -> argparse.Namespace:

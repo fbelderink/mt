@@ -2,7 +2,7 @@ import random
 
 from postprocessing.postprocessing import undo_prepocessing
 from utils.hyperparameters import FFHyperparameters
-from utils.ConfigLoader import ConfigLoader
+from utils.hyperparameters.ConfigLoader import ConfigLoader
 from training.train import train
 import glob
 from utils.file_manipulation import *

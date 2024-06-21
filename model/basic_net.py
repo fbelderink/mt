@@ -1,6 +1,6 @@
 import torch.nn as nn
 import abc
-from utils.model_hyperparameters import ModelHyperparameters
+from utils.hyperparameters.model_hyperparameters import ModelHyperparameters
 
 
 class BasicNet(nn.Module):
