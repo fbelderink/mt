@@ -1,7 +1,7 @@
 from typing import List
 from preprocessing.BPE import generate_bpe, perform_bpe
 from preprocessing.dictionary import Dictionary
-from preprocessing.batch import create_batch, get_index_batches
+from preprocessing.batching.batch import create_batch, get_index_batches
 from utils.file_manipulation import save_batches
 
 def task_evaluate(multi30k_de: List[List[str]], multi30k_en: List[List[str]]):

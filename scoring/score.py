@@ -4,7 +4,7 @@ import numpy as np
 
 from typing import List
 import torch.nn as nn
-from preprocessing.fragment import fragment_data_to_indices
+from preprocessing.batching.fragment import fragment_data_to_indices
 
 
 def get_scores(model: nn.Module, source_data: List[List[str]], target_data: List[List[str]],

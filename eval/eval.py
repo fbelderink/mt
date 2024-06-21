@@ -1,7 +1,5 @@
 import random
 
-import torch
-
 from postprocessing.postprocessing import undo_prepocessing
 from utils.hyperparameters import FFHyperparameters
 from utils.ConfigLoader import ConfigLoader
@@ -11,7 +9,6 @@ from utils.file_manipulation import *
 from metrics.calculate_bleu_of_model import get_bleu_of_model
 from search import beam_search
 from scoring import score
-from preprocessing.fragment import fragment_data_to_indices
 from preprocessing.dictionary import Dictionary
 from preprocessing.dataset import TranslationDataset
 from torch.utils.data import DataLoader

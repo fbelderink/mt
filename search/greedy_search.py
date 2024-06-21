@@ -1,9 +1,6 @@
 from preprocessing.dictionary import Dictionary
-import torch
 import torch.nn as nn
-import numpy as np
 from typing import List
-from preprocessing.fragment import create_source_window_matrix
 
 from search.beam_search import translate as beam_translate
 

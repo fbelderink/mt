@@ -2,7 +2,7 @@ from __future__ import annotations
 import torch
 from torch.utils.data import Dataset
 from preprocessing.dictionary import Dictionary
-from preprocessing.fragment import fragment_data_to_indices
+from preprocessing.batching.fragment import fragment_data_to_indices
 from typing import List
 import numpy as np
 import sys

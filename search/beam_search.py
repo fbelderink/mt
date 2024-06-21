@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 from preprocessing.dictionary import Dictionary
-from preprocessing.fragment import create_source_window_matrix
+from preprocessing.batching.fragment import create_source_window_matrix
 from typing import List
 
 
