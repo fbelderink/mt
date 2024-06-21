@@ -1,176 +1,211 @@
-import torch
-from torch.utils.data import DataLoader
-from model.feedforward_net import FeedforwardNet
-from model.recurrent_net import RecurrentNet
-from preprocessing.dataset import TranslationDataset
-from utils.ConfigLoader import ConfigLoader
-from utils.hyperparameters import Hyperparameters, RNNHyperparameters, FFHyperparameters
 import argparse
 
+import numpy as np
+
+import torch
+from torch.utils.data import DataLoader
+
+from model.ff.feedforward_net import FeedforwardNet
+from preprocessing.dataset import TranslationDataset
+from utils.ConfigLoader import ConfigLoader
 from utils.file_manipulation import save_checkpoint
+from utils.model_hyperparameters import RNNModelHyperparameters, FFModelHyperparameters, ModelHyperparameters
+from utils.train_hyperparameters import TrainHyperparameters, RNNTrainHyperparameters, FFTrainHyperparameters
+from model.seq2seq.recurrent_net import RecurrentNet
 
 
-# niedrigste perplexity: 12
-
-def _count_correct_predictions(pred, L):
-    correct_predictions = 0
-    for p, l in zip(torch.argmax(pred, dim=1), L):
-        if p == l:
-            correct_predictions += 1
-    return correct_predictions
-
-
-def train(train_path: str, validation_path: str, config: Hyperparameters, max_epochs=100,
-          shuffle=True, num_workers=2, val_rate=100, train_eval_rate=10, random_seed=None,
-          model_name=""):
-    if random_seed is not None:
-        torch.manual_seed(random_seed)
-
-    lr = config.learning_rate
-    batch_size = config.batch_size
+def train(train_path: str, validation_path: str,
+          model_params: ModelHyperparameters, train_params: TrainHyperparameters,
+          model_name=None):
+    # train encoder and decoder separately using two optimizers (cf. Pytorch tutorial)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    print(f"training on {device}")
+
     train_set = TranslationDataset.load(train_path)
-    train_dataloader = DataLoader(train_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
-    print("Number of Batches: " + str(len(train_dataloader)))
-    print("Batch Size: " + str(batch_size))
+    train_dataloader = DataLoader(train_set,
+                                  batch_size=train_params.batch_size,
+                                  shuffle=train_params.shuffle,
+                                  num_workers=train_params.num_workers)
 
     validation_set = TranslationDataset.load(validation_path)
-    validation_dataloader = DataLoader(validation_set, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
+    validation_dataloader = DataLoader(validation_set,
+                                       batch_size=len(validation_set),
+                                       shuffle=train_params.shuffle,
+                                       num_workers=train_params.num_workers)
 
-    if isinstance(config, RNNHyperparameters):
-        model = RecurrentNet(train_set.get_source_dict_size(), train_set.get_target_dict_size(), config,
-                             model_name=model_name).to(device)
-    elif isinstance(config, FFHyperparameters):
-        model = FeedforwardNet(train_set.get_source_dict_size(), train_set.get_target_dict_size(), config,
-                         window_size=train_set.get_window_size(), model_name=model_name).to(device)
+    optimizers = None
+    if isinstance(model_params, RNNModelHyperparameters) and isinstance(train_params, RNNTrainHyperparameters):
+        model = RecurrentNet(train_set.get_source_dict_size(),
+                             train_set.get_target_dict_size(),
+                             model_params,
+                             train_set.get_eos_idx(),
+                             model_name).to(device)
+
+        if train_params.two_optimizers:
+            encoder_optimizer = train_params.optimizer(model.get_encoder().parameters(), lr=train_params.learning_rate)
+            decoder_optimizer = train_params.optimizer(model.get_decoder().parameters(), lr=train_params.learning_rate)
+
+            optimizers = [encoder_optimizer, decoder_optimizer]
+    elif isinstance(model_params, FFModelHyperparameters) and isinstance(train_params, FFTrainHyperparameters):
+        model = FeedforwardNet(train_set.get_source_dict_size(),
+                               train_set.get_target_dict_size(),
+                               model_params,
+                               window_size=train_set.get_window_size(),
+                               model_name=model_name).to(device)
     else:
-        raise ValueError
+        raise ValueError('Invalid model hyperparameters')
 
-    if config.saved_model != "" and random_seed is None:
-        model = torch.load(config.saved_model)
+    if train_params.saved_model != "":
+        model = torch.load(train_params.saved_model)
 
-    optimizer = config.optimizer(model.parameters(), lr=lr)
+    if not optimizers:
+        optimizers = [train_params.optimizer(model.parameters(), lr=train_params.learning_rate)]
 
+    print(f"training on {device}")
+    print("Number of Batches: " + str(len(train_dataloader)))
+    print("Batch Size: " + str(train_params.batch_size))
     model.print_structure()
+    print("\nStarting Training:\n")
 
     total_steps = 0
-    previous_validation_perplexity = 0
-    per_epoch = False
-    per_batch = False
-    checkpoints_rate = config.checkpoints
+    checkpoint_rate = train_params.checkpoints if train_params.checkpoints > 1 else 1 / train_params.checkpoints
+    for epoch in range(train_params.max_epochs):
+        print(f"Epoch {epoch + 1}/{train_params.max_epochs}")
 
-    if 0 < checkpoints_rate <= 1:
-        # create checkpoints during epochs
-        checkpoints_rate = 1 // checkpoints_rate
-        per_epoch = True
-        per_batch = False
-    elif checkpoints_rate > 1:
-        # create checkpoints during batch
-        per_batch = True
-        per_epoch = False
+        total_steps, epoch_loss = train_epoch(model,
+                                              train_dataloader, validation_dataloader,
+                                              optimizers,
+                                              train_params, epoch, total_steps,
+                                              checkpoint_rate, train_params.checkpoints > 1)
 
-    if checkpoints_rate == 0:
-        # no checkpoints
-        per_batch = False
-        per_epoch = False
-
-    epoch_count = -(max_epochs % checkpoints_rate)
-    print("\n        Starting Training: \n")
-    for epoch in range(max_epochs):
-        if per_epoch and epoch_count == checkpoints_rate:
+        if train_params.checkpoints >= 1 and epoch % checkpoint_rate == 0:
             save_checkpoint(model, model.model_name)
-            epoch_count = 0
-        steps = 0
 
-        batch_count = -(len(train_dataloader) % checkpoints_rate)
+    save_checkpoint(model, model.model_name)
 
-        for S, T, L in train_dataloader:
-            if per_batch and batch_count == (len(train_dataloader) // checkpoints_rate):
-                save_checkpoint(model, model.model_name)
-                batch_count = 0
 
-            S = S.to(device)
-            T = T.to(device)
-            L = L.long().to(device)
+def train_epoch(model, train_dataloader, validation_dataloader,
+                optimizers, train_params, epoch_num, total_steps,
+                checkpoint_rate=None, do_checkpointing=False):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+    steps = 0
+    epoch_loss = 0
+    previous_val_ppl = 0
+
+    for S, T, L in train_dataloader:
+        S = S.to(device)
+        T = T.to(device)
+        L = L.to(device)
+
+        # TRAIN LOOP
+        for optimizer in optimizers:
             optimizer.zero_grad()
 
-            pred = model(S, T)
+        predictions, loss = forward_pass(model, S, T, L, train_params)
 
-            loss = model.compute_loss(pred, L)
+        loss.backward()
 
-            loss.backward()
+        for optimizer in optimizers:
             optimizer.step()
 
-            # keep track of metrics
-            steps += 1
-            total_steps += 1
+        epoch_loss += loss.item()
 
-            # print batch metrics
-            batch_correct_predictions = _count_correct_predictions(pred, L)
-            true_batch_size = L.size(0)
-            batch_accuracy = batch_correct_predictions / true_batch_size
-            batch_perplexity = torch.exp(loss)
-            if per_batch:
-                batch_count += 1
+        # EVAL AND OPTIONAL FEATURES
+        if steps % train_params.print_eval_every == 0:
+            perplexity, accuracy = evaluate_performance(predictions,
+                                                        loss.item(),
+                                                        L,
+                                                        eos_idx=3 if train_params.ignore_eos_for_acc else -1)
+            print(f"steps: {steps}, epoch: {epoch_num}")
+            print(f"batch metrics: accuracy: {accuracy}, perplexity: {perplexity}, loss: {loss.item()}\n")
 
-            if steps % train_eval_rate == 0:
-                print("batch_accuracy:" + str(batch_accuracy))
-                print("batch_perplexity:" + str(batch_perplexity.item()))
-                print("epoch: " + str(epoch))
-                print("steps: " + str(steps))
-                print()
+        if train_params.test_model_every != 0 and steps % train_params.test_model_every == 0:
+            val_ppl, val_acc = test_on_validation_data(model, validation_dataloader, train_params)
 
-            # evaluate model every k updates
-            if total_steps % val_rate == 0:
-                model.eval()
+            if train_params.early_stopping and 0 < previous_val_ppl <= val_ppl:
+                print("EARLY STOPPING")
+                return
 
-                total_val_loss = 0
-                total_val_correct_predictions = 0
-                total_val_samples = 0
+            if train_params.half_lr and 0 < previous_val_ppl <= val_ppl:
+                half_lr(optimizers)
+                print(
+                    f"HALF LR: previous lr: {2 * optimizers[0].param_groups[0]['lr']}, new lr: {optimizers[0].param_groups[0]['lr']}\n")
 
-                # VALIDATION
-                for S_v, T_v, L_v in validation_dataloader:
-                    S_v = S_v.to(device)
-                    T_v = T_v.to(device)
-                    L_v = L_v.to(device)
+            previous_val_ppl = val_ppl
 
-                    total_val_samples += L_v.size(0)
+        steps += 1
+        total_steps += 1
 
-                    pred_v = model(S_v, T_v, apply_log_softmax=False)
+        step_rate = len(train_dataloader) // checkpoint_rate
+        if do_checkpointing and steps % step_rate == 0:
+            save_checkpoint(model, model.model_name)
 
-                    total_val_correct_predictions += _count_correct_predictions(pred_v, L_v)
+    return total_steps, epoch_loss
 
-                    # compute cross entropy without averaging
-                    total_val_loss += model.compute_loss(pred_v, L_v, False)
 
-                validation_accuracy = total_val_correct_predictions / total_val_samples
-                validation_perplexity = torch.exp(total_val_loss / total_val_samples).item()
-                print()
-                print("Validation:")
-                print("Validation accuracy: " + str(validation_accuracy))
-                print("Validation perplexity: " + str(validation_perplexity))
+def test_on_validation_data(model, validation_dataloader, train_params):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-                if config.half_lr and 0 < previous_validation_perplexity <= validation_perplexity:
-                    for param_group in optimizer.param_groups:
-                        param_group['lr'] = param_group['lr'] / 2
-                    print("learning rate halfed; new learning rate: " + str(optimizer.param_groups[0]['lr']))
-                elif config.early_stopping and 0 < previous_validation_perplexity <= validation_perplexity:
-                    save_checkpoint(model, model.model_name)
-                    print("early stop, because model perplexity exceeded")
-                    return
+    model.eval()
 
-                previous_validation_perplexity = validation_perplexity
-                print()
+    S, T, L = next(iter(validation_dataloader))
+    # only one iteration as batch_size = len(validation_set)
 
-                model.train()
+    S = S.to(device)
+    T = T.to(device)
+    L = L.to(device)
 
-        if per_epoch:
-            epoch_count += 1
+    predictions, loss = forward_pass(model, S, T, L, train_params)
 
-    save_checkpoint(model, model_name)
+    validation_perplexity, validation_accuracy = evaluate_performance(predictions,
+                                                                      loss.item(),
+                                                                      L,
+                                                                      eos_idx=3 if train_params.ignore_eos_for_acc else -1)
+
+    print(f"validation results: accuracy: {validation_accuracy}, perplexity: {validation_perplexity}, loss: {loss.item()}\n")
+
+    model.train()
+
+    return validation_perplexity, validation_accuracy
+
+
+def forward_pass(model, S, T, L, train_params):
+    if isinstance(train_params, RNNTrainHyperparameters):
+        predictions = model(S, T,
+                            teacher_forcing=train_params.teacher_forcing,
+                            T_max=T.size(1))
+    elif isinstance(train_params, FFTrainHyperparameters):
+        predictions = model(S, T)
+        predictions = predictions.unsqueeze(-1)
+    else:
+        raise ValueError('Invalid train hyperparameters')
+
+    loss = model.compute_loss(predictions, L)
+
+    return predictions, loss
+
+
+def evaluate_performance(predictions, loss, L, eos_idx=-1):
+    # predictions shape (B x dict_size x seq_len)
+    # L shape (B x seq_len)
+    correct = 0
+    samples = 0
+    for ps, ls in zip(torch.argmax(predictions, dim=1), L):
+        for p, l in zip(ps, ls):
+            if l != eos_idx:
+                # only count matching non eos symbols
+                if p == l:
+                    correct += 1
+                samples += 1
+
+    return np.exp(loss), correct / samples
+
+
+def half_lr(optimizers):
+    for optimizer in optimizers:
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = param_group['lr'] / 2
 
 
 def _parse_arguments() -> argparse.Namespace:
@@ -178,44 +213,22 @@ def _parse_arguments() -> argparse.Namespace:
 
     parser.add_argument('-tp', '--train_path', type=str)
     parser.add_argument('-vp', '--validation_path', type=str)
-    parser.add_argument('-cp', '--config_path', type=str)
-    parser.add_argument('-vr', '--val_rate', type=int)
-    parser.add_argument('-ter', '--train_eval_rate', type=int)
-    parser.add_argument('-s', '--shuffle', type=bool, default=True)
-    parser.add_argument('-nw', '--num_workers', type=int, default=2)
-    parser.add_argument('-me', '--max_epochs', type=int, default=100)
+    parser.add_argument('-c', '--config', type=str)
+    parser.add_argument('-params', '--train_params', type=str)
     parser.add_argument('-rnn', '--train_rnn', type=bool)
-    parser.add_argument('-mn', '--model_name', type=str)
 
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     args = _parse_arguments()
 
-    config = ConfigLoader(args.config_path).get_config()
+    model_config = ConfigLoader(args.config).get_config()
+    train_config = ConfigLoader(args.train_params).get_config()
 
     if args.train_rnn:
-        model_hyperparameters = RNNHyperparameters(config)
-
-        train(args.train_path,
-              args.validation_path,
-              model_hyperparameters,
-              max_epochs=args.max_epochs,
-              val_rate=args.val_rate,
-              train_eval_rate=args.train_eval_rate,
-              shuffle=args.shuffle,
-              num_workers=args.num_workers,
-              model_name=args.model_name)
+        train(args.train_path, args.validation_path,
+              RNNModelHyperparameters(model_config), RNNTrainHyperparameters(train_config))
     else:
-        model_hyperparameters = FFHyperparameters(config)
-
-        train(args.train_path,
-              args.validation_path,
-              model_hyperparameters,
-              max_epochs=args.max_epochs,
-              val_rate=args.val_rate,
-              train_eval_rate=args.train_eval_rate,
-              shuffle=args.shuffle,
-              num_workers=args.num_workers,
-              model_name=args.model_name)
+        train(args.train_path, args.validation_path,
+              FFModelHyperparameters(model_config), FFTrainHyperparameters(train_config))
