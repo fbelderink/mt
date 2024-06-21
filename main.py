@@ -4,11 +4,8 @@ from assignments.assignment1 import *
 from assignments.assignment3 import *
 from assignments.assignment2 import *
 from assignments.assignment4 import *
-from assignments.assignment5 import generate_dataset as gen_rnn_dataset
-import training.train as train
 from preprocessing.dataset import TranslationDataset, RNNTranslationDataset
 from utils.ConfigLoader import ConfigLoader
-from utils.hyperparameters import FFHyperparameters
 import pickle
 from metrics.metrics import BLEU
 from eval.eval import eval_scores
@@ -48,24 +45,6 @@ if __name__ == "__main__":
 
     dict_de = Dictionary.load("data/dicts/train_dict_de.pkl")
     dict_en = Dictionary.load("data/dicts/train_dict_en.pkl")
-
-    #generate dataset
-    #generate_dataset(data_de, data_en, args.window_size, 7000,
-    #                 dict_de=dict_de, dict_en=dict_en, save_path=f'data/train7k_w{args.window_size}.pt')
-    #test_dataset_load(f'data/train7k_w{args.window_size}.pt')
-
-    #generate_dataset(data_de_dev, data_en_dev, args.window_size, 7000,
-    #                 dict_de=dict_de, dict_en=dict_en, save_path=f'data/val7k_w{args.window_size}.pt')
-    #test_dataset_load(f'data/val7k_w{args.window_size}.pt')
-
-    model_hyperparameters = FFHyperparameters(ConfigLoader("configs/ff/config.yaml").get_config())
-
-    train.train(f"data/train7k_w{model_hyperparameters.window_size}.pt",
-                f"data/val7k_w{model_hyperparameters.window_size}.pt",
-                model_hyperparameters,
-                val_rate=400,
-                train_eval_rate=200,
-                num_workers=2)
 
     #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
