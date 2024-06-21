@@ -10,7 +10,8 @@ class Decoder(nn.Module):
                  embed_dim,
                  lstm_hidden,
                  lstm_layers,
-                 lstm_dropout):
+                 lstm_dropout,
+                 lstm_bidirectional):
         super(Decoder, self).__init__()
 
         self.embedding = nn.Embedding(target_dict_size, embed_dim)
@@ -20,6 +21,7 @@ class Decoder(nn.Module):
             lstm_hidden,
             lstm_layers,
             dropout=lstm_dropout,
+            bidirectional=lstm_bidirectional,
             batch_first=True
         )
 
@@ -37,7 +39,8 @@ class AttentionDecoder(nn.Module):
                  embed_dim,
                  lstm_hidden,
                  lstm_layers,
-                 lstm_dropout):
+                 lstm_dropout,
+                 lstm_bidirectional):
 
         super(AttentionDecoder, self).__init__()
 
@@ -45,11 +48,17 @@ class AttentionDecoder(nn.Module):
                                embed_dim,
                                lstm_hidden,
                                lstm_layers,
-                               lstm_dropout)
+                               lstm_dropout,
+                               lstm_bidirectional)
 
-        self.attention = Attention(lstm_hidden)
+        self.attention = Attention(lstm_hidden, lstm_bidirectional)
 
-        self.fc = nn.Linear(2 * lstm_hidden, target_dict_size)
+        if lstm_bidirectional:
+            fc_input_size = 2 * 2 * lstm_hidden
+        else:
+            fc_input_size = 2 * lstm_hidden
+
+        self.fc = nn.Linear(fc_input_size, target_dict_size)
 
     def forward(self, encoder_outputs, encoder_state, target_tensor, T_max=-1,
                 teacher_forcing=False, apply_log_softmax=True):

@@ -8,10 +8,15 @@ class Attention(nn.Module):
     Attention layer, implemented as proposed in Bahdanau & Cho
     """
 
-    def __init__(self, hidden):
+    def __init__(self, hidden, bidirectional_lstms):
         super(Attention, self).__init__()
 
-        self.fc_1 = nn.Linear(2 * hidden, hidden)
+        if bidirectional_lstms:
+            input_size = 2 * 2 * hidden
+        else:
+            input_size = 2 * hidden  # encoder_hidden + decoder_hidden
+
+        self.fc_1 = nn.Linear(input_size, hidden)
         self.activation = nn.Tanh()
 
         self.v_a = nn.Linear(hidden, 1)
