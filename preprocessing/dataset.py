@@ -14,6 +14,7 @@ class TranslationDataset(Dataset):
         super(TranslationDataset, self).__init__()
         self._source_dict_size = len(source_dict)
         self._target_dict_size = len(target_dict)
+        self._eos_idx = target_dict.get_index_of_string('</s>')
 
     @staticmethod
     def load(path):
@@ -28,6 +29,9 @@ class TranslationDataset(Dataset):
 
     def get_target_dict_size(self):
         return self._target_dict_size
+
+    def get_eos_idx(self):
+        return self._eos_idx
 
 
 class FFTranslationDataset(TranslationDataset):
@@ -71,19 +75,19 @@ class RNNTranslationDataset(TranslationDataset):
         T_max = len(max(filtered_source_data + filtered_target_data, key=lambda sentence: len(sentence)))
 
         filtered_source_data = [sentence + ['</s>'] * (T_max - len(sentence)) for sentence in filtered_source_data]
-        filtered_target_data = [sentence + ['</s>'] * (T_max - len(sentence)) for sentence in filtered_target_data]
+        filtered_target_data = [['<s>'] + sentence + ['</s>'] * (T_max - len(sentence)) for sentence in
+                                filtered_target_data]
 
         get_source_index = np.vectorize(source_dict.get_index_of_string)
         get_target_index = np.vectorize(target_dict.get_index_of_string)
 
         self._source_data = torch.from_numpy(get_source_index(np.array(filtered_source_data)))
         self._target_data = torch.from_numpy(get_target_index(np.array(filtered_target_data)))
+        self._labels = torch.from_numpy(get_target_index(np.array([sentence[1:] for sentence in filtered_target_data])))
 
     def __len__(self):
         return len(self._source_data)
 
     def __getitem__(self, idx):
-        if idx == 0:
-            return self._source_data[0], '<s>', self._target_data[0]
+        return self._source_data[idx], self._target_data[idx], self._labels[idx]
 
-        return self._source_data[idx], self._target_data[idx - 1], self._target_data[idx]
