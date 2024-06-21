@@ -2,13 +2,12 @@ import torch.nn as nn
 from model.layers.linear import LinearLayer
 from model.basic_net import BasicNet
 import torch
-import math
-from utils.hyperparameters import FFHyperparameters
+from utils.model_hyperparameters import FFModelHyperparameters
 
 
 class FeedforwardNet(BasicNet):
     def __init__(self, source_dict_size, target_dict_size,
-                 config: FFHyperparameters, window_size, model_name="basic_net"):
+                 config: FFModelHyperparameters, window_size, model_name="ff"):
         super(FeedforwardNet, self).__init__(source_dict_size, target_dict_size, config, model_name)
         # hyperparameters
         self.embed_dim = config.dimensions[0]
@@ -22,8 +21,7 @@ class FeedforwardNet(BasicNet):
         self.use_custom_ll = config.use_custom_ll
 
         # LOSS
-        self.loss_sum = nn.CrossEntropyLoss(reduction="sum")
-        self.loss_mean = nn.CrossEntropyLoss()
+        self.criterion = nn.CrossEntropyLoss()
 
         # LAYERS
         # embedding layers
@@ -101,10 +99,5 @@ class FeedforwardNet(BasicNet):
 
         return output
 
-    def compute_loss(self, pred, label, normalized=True):
-        label = label.view(-1)
-        if normalized:
-            loss = self.loss_mean(pred, label)
-        else:
-            loss = self.loss_sum(pred, label)
-        return loss
+    def compute_loss(self, pred, label):
+        return self.criterion(pred, label)
