@@ -1,6 +1,9 @@
 import argparse
-from assignments.assignment1 import *
 from assignments.assignment4 import *
+from utils.ConfigLoader import ConfigLoader
+from utils.model_hyperparameters import RNNModelHyperparameters
+from utils.train_hyperparameters import RNNTrainHyperparameters
+from training.train import train
 
 
 def _parse_arguments() -> argparse.Namespace:
@@ -29,35 +32,27 @@ if __name__ == "__main__":
     first_assignment(args, hyps, refs)
     """
 
-    data_de = load_data(args.data_de_path)
-    data_en = load_data(args.data_en_path)
+    # data_de = load_data(args.data_de_path)
+    # data_en = load_data(args.data_en_path)
 
-    data_de_dev = load_data(args.data_de_dev_path)
-    data_en_dev = load_data(args.data_en_dev_path)
+    # data_de_dev = load_data(args.data_de_dev_path)
+    # data_en_dev = load_data(args.data_en_dev_path)
 
     dict_de = Dictionary.load("data/dicts/train_dict_de.pkl")
     dict_en = Dictionary.load("data/dicts/train_dict_en.pkl")
 
-    #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model_config = ConfigLoader("./configs/rnn/config.yaml").get_config()
 
-    #model = torch.load("eval/best_models/bleu28_6_w3.pth", map_location=device)
+    train_config = ConfigLoader("./configs/training/rnn_train_config.yaml").get_config()
 
-    #translations = test_beam_search(model, data_de_dev, dict_de, dict_en, 3, model.window_size, get_n_best=True)
+    model_params = RNNModelHyperparameters(model_config)
 
-    #translations = load_data("eval/translations/best_translations")
+    train_params = RNNTrainHyperparameters(train_config)
 
-    #translations = test_greedy_search(model, data_de_dev, dict_de, dict_en, model.window_size)
+    train(
+        './data/train7k_rnn.pt',
+        './data/val7k_rnn.pt',
+        model_params,
+        train_params
+    )
 
-    #test_get_scores(model, data_de_dev, data_en_dev, dict_de, dict_en, model.window_size)
-
-    #test_model_bleu(model, data_de_dev, data_en_dev, dict_de, dict_en,
-    #                3,  model.window_size, args.do_beam_search, translations, use_torch_bleu=True)
-
-    #bleus = determine_models_bleu('eval/checkpoints/2024-06-12', data_de_dev, data_en_dev, dict_de, dict_en,
-    #                              3, model.window_size, True)
-    #print(f"Best model: {max(bleus)}")
-
-    #our_score_avg, ref_score_avg = eval_scores(model, data_de_dev, data_en_dev, dict_de, dict_en,
-    #                                           translations=translations)
-
-    #print(our_score_avg, ref_score_avg)
