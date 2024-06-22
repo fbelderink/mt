@@ -71,8 +71,8 @@ def train(train_path: str, validation_path: str,
 
     total_steps = 0
     checkpoint_rate = train_params.checkpoints if train_params.checkpoints > 1 else 1 / train_params.checkpoints
-    for epoch in range(train_params.max_epochs):
-        print(f"Epoch {epoch + 1}/{train_params.max_epochs}")
+    for epoch in range(1, train_params.max_epochs + 1):
+        print(f"Epoch {epoch}/{train_params.max_epochs}")
 
         total_steps, epoch_loss = train_epoch(model,
                                               train_dataloader, validation_dataloader,
@@ -80,7 +80,7 @@ def train(train_path: str, validation_path: str,
                                               train_params, epoch, total_steps,
                                               checkpoint_rate, train_params.checkpoints > 1)
 
-        if train_params.checkpoints >= 1 and epoch % checkpoint_rate == 0:
+        if train_params.checkpoints <= 1 and epoch % checkpoint_rate == 0:
             save_checkpoint(model, model.model_name)
 
     save_checkpoint(model, model.model_name)
