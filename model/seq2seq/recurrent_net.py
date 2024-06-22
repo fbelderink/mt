@@ -2,7 +2,7 @@ import torch.nn as nn
 from model.basic_net import BasicNet
 from model.seq2seq.encoder import Encoder
 from model.seq2seq.decoder import AttentionDecoder
-from utils.hyperparameters.model_hyperparameters import RNNModelHyperparameters
+from utils.model_hyperparameters import RNNModelHyperparameters
 
 
 class RecurrentNet(BasicNet):

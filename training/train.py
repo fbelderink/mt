@@ -6,11 +6,11 @@ import torch
 from torch.utils.data import DataLoader
 
 from model.ff.feedforward_net import FeedforwardNet
-from preprocessing.dataset import TranslationDataset
-from utils.hyperparameters.ConfigLoader import ConfigLoader
+from preprocessing.dataset.dataset import TranslationDataset
+from utils.ConfigLoader import ConfigLoader
 from utils.file_manipulation import save_checkpoint
-from utils.hyperparameters.model_hyperparameters import RNNModelHyperparameters, FFModelHyperparameters, ModelHyperparameters
-from utils.hyperparameters.train_hyperparameters import TrainHyperparameters, RNNTrainHyperparameters, FFTrainHyperparameters
+from utils.model_hyperparameters import RNNModelHyperparameters, FFModelHyperparameters, ModelHyperparameters
+from utils.train_hyperparameters import TrainHyperparameters, RNNTrainHyperparameters, FFTrainHyperparameters
 from model.seq2seq.recurrent_net import RecurrentNet
 
 

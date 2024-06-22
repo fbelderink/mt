@@ -1,12 +1,12 @@
 from __future__ import annotations
 import torch
 from torch.utils.data import Dataset
-from preprocessing.dictionary import Dictionary
-from preprocessing.batching.fragment import fragment_data_to_indices
 from typing import List
 import numpy as np
 import sys
 import os
+from preprocessing.dictionary import Dictionary
+from preprocessing.batching.fragment import fragment_data_to_indices
 
 
 class TranslationDataset(Dataset):
@@ -62,25 +62,34 @@ class FFTranslationDataset(TranslationDataset):
 
 
 class RNNTranslationDataset(TranslationDataset):
-    def __init__(self, source_data: List[List[str]], target_data: List[List[str]],
-                 source_dict: Dictionary, target_dict: Dictionary):
+    def __init__(self, source_data: List[List[str]],
+                 target_data: List[List[str]],
+                 source_dict: Dictionary,
+                 target_dict: Dictionary):
+
         super(RNNTranslationDataset, self).__init__(source_dict, target_dict)
 
+        # apply BPE to the data according to the dictionaries
         filtered_source_data = source_dict.apply_vocabulary_to_text(source_data, bpe_performed=False)
         filtered_target_data = target_dict.apply_vocabulary_to_text(target_data, bpe_performed=False)
 
         self._source_dict_size = len(source_dict)
         self._target_dict_size = len(target_dict)
 
+        # because RNNs can process different length sequences
+        # we pad our source matrix to run them in parallel
         T_max = len(max(filtered_source_data + filtered_target_data, key=lambda sentence: len(sentence)))
 
+        # Pad the sentences to the same length
         filtered_source_data = [sentence + ['</s>'] * (T_max - len(sentence)) for sentence in filtered_source_data]
+        # add the start of sentence token for the first iteration of the decoder
         filtered_target_data = [['<s>'] + sentence + ['</s>'] * (T_max - len(sentence)) for sentence in
                                 filtered_target_data]
 
         get_source_index = np.vectorize(source_dict.get_index_of_string)
         get_target_index = np.vectorize(target_dict.get_index_of_string)
 
+        # convert the sentences to indices according to the dictionaries
         self._source_data = torch.from_numpy(get_source_index(np.array(filtered_source_data)))
         self._target_data = torch.from_numpy(get_target_index(np.array(filtered_target_data)))
         self._labels = torch.from_numpy(get_target_index(np.array([sentence[1:] for sentence in filtered_target_data])))

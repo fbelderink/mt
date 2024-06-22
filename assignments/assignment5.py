@@ -1,5 +1,5 @@
 from typing import List
-from preprocessing.dataset import RNNTranslationDataset
+from preprocessing.dataset.dataset import RNNTranslationDataset
 from preprocessing.BPE import generate_bpe
 from preprocessing.dictionary import Dictionary
 
