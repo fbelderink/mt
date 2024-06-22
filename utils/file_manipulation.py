@@ -6,6 +6,7 @@ from pathlib import Path
 import os
 import shutil
 
+
 def load_data(path: str,
               split: bool = True) -> Union[List[str], List[List[str]]]:
     """
@@ -69,9 +70,10 @@ def load_model(path: str, model: nn.Module) -> nn.Module:
     return model
 
 
-def save_checkpoint(model: nn.Module):
+def save_checkpoint(model: nn.Module, model_name):
     date = datetime.today().strftime('%Y-%m-%d')
     time = datetime.today().strftime('%H_%M_%S')
-    print("\n saving checkpoint at " + f"eval/checkpoints/{date}/{time}.pth" + "\n")
-    Path(f"eval/checkpoints/{date}").mkdir(exist_ok=True)
-    torch.save(model, f"eval/checkpoints/{date}/{time}.pth")
+    print("\n saving checkpoint at " + f"eval/checkpoints/{date}-{model_name}/{time}.pth" + "\n")
+    Path(f"eval/checkpoints/{date}-{model_name}").mkdir(exist_ok=True)
+    torch.save(model, f"eval/checkpoints/{date}-{model_name}/{time}.pth")
+

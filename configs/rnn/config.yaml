@@ -1,0 +1,9 @@
+encoder_parameters:
+  embed_dim: 100
+  dropout_rate: 0.0
+decoder_parameters:
+  embed_dim: 100
+  dropout_rate: 0.0
+lstm_layers: 1
+lstm_hidden_dim: 10
+lstm_bidirectional: True

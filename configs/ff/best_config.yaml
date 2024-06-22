@@ -1,0 +1,7 @@
+dimensions:
+  embed_dim: 150
+  hidden1: 600
+  hidden2: 1200
+activation_function: "relu"
+use_custom_linear_layer: False
+dropout_rate: 0.05

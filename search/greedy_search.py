@@ -1,22 +1,17 @@
 from preprocessing.dictionary import Dictionary
-import torch
 import torch.nn as nn
-import numpy as np
-from preprocessing.postprocessing import undo_prepocessing
 from typing import List
-from preprocessing.fragment import create_source_window_matrix
+
+from search.beam_search import translate as beam_translate
 
 
 def translate(model: nn.Module,
               source_data: List[List[str]],
               source_dict: Dictionary,
               target_dict: Dictionary,
-              window_size: int):
-    # TODO experiment with bigger window size
-
-    # TODO
-    alignment_factor = 1
-
+              window_size: int,
+              alignment_factor=1):
+    """
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     model.to(device)
@@ -69,3 +64,5 @@ def translate(model: nn.Module,
         target_sentences.append(translated_sentence)
 
     return target_sentences
+    """
+    return beam_translate(model, source_data, source_dict, target_dict, 1, window_size, False, alignment_factor)

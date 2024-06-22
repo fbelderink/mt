@@ -1,118 +1,191 @@
-# for imports append .. to path
-import sys
-sys.path.append('..')
+import random
 
-from metrics.metrics import BLEU
-from utils.file_manipulation import load_data
-import torch
-from utils.ConfigLoader import Hyperparameters
+from postprocessing.postprocessing import undo_prepocessing
+from utils.hyperparameters import FFHyperparameters
+from utils.hyperparameters.ConfigLoader import ConfigLoader
+from training.train import train
+import glob
+from utils.file_manipulation import *
+from metrics.calculate_bleu_of_model import get_bleu_of_model
+from search import beam_search
+from scoring import score
 from preprocessing.dictionary import Dictionary
-from preprocessing.BPE import generate_bpe
-from statistics import mean
-import argparse
-from search.beam_search import translate as beam_translate
-from search.greedy_search import translate as greedy_translate
-from typing import List
+from preprocessing.dataset import TranslationDataset
+from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description='Translate a given source language to a target language.')
-    parser.add_argument( '--model_path', type=str, help='The path to the model.')
-    parser.add_argument( '--source_data_path', type=str, help='The path to the source data.')
-    parser.add_argument( '--target_data_path', type=str, help='The path to the target data.')
-    parser.add_argument('--source_dict_path', type=str, help='The path to the source dictionary.')
-    parser.add_argument('--target_dict_path', type=str, help='The path to the target dictionary.')
-    parser.add_argument('--config_path', type=str, help='The path to the configuration file.')
-    parser.add_argument('--beam_search', type=bool, help='Whether to use beam search.')
-    parser.add_argument('--window_size', type=int, help='The window size for beam search.')
-    parser.add_argument('--out_hyps_path', type=str, help='The path to the output hypotheses.')
-    return parser.parse_args()
-
-def create_hyps(model_path: str,
-                source_data_path: str,
-                target_data_path: str,
-                source_dict_path: str,
-                target_dict_path: str,
-                config_path: str,
-                beam_search: bool):
-    if beam_search:
-        return beam_translate(torch.load(model_path),
-                              load_data(source_data_path),
-                              Dictionary.load(source_dict_path),
-                              Dictionary.load(target_dict_path),
-                       2,
-                       2)
-
+def getseeds():
+    seeds = []
+    for i in range(3):
+        seeds.append(random.randint(-(1e10), 1e10))
+    if seeds[0] == seeds[1] or seeds[0] == seeds[2] or seeds[1] == seeds[2]:
+        return getseeds()
     else:
-        return greedy_translate(model_path,
-                         source_data_path,
-                         target_data_path,
-                         Dictionary.load(source_dict_path),
-                         Dictionary.load(target_dict_path),
-                         Hyperparameters(config_path))
+        return seeds
 
 
-def print_verbose(verbose: bool, message: str):
-    """
-    Print a message if verbose is set to True.
-    Args:
-    verbose: bool, whether to print the message.
-    message: str, the message to print.
-    """
-    if verbose:
-        print(message)
+def execute_runs():
+    for name, seed in zip(["A", "B", "C"], getseeds()):
+        train("data/train7k_w3.pt",
+              "data/val7k_w3.pt",
+              FFHyperparameters(ConfigLoader("configs/best_config.yaml").get_config()),
+              max_epochs=5,
+              shuffle=True,
+              num_workers=4,
+              val_rate=0,
+              train_eval_rate=10,
+              random_seed=seed,
+              model_name=name)
 
 
-def set_device(device: str) -> torch.device:
-    """
-    Set the device to run the model on.
-    Returns: The device to run the model on.
-    """
-    if device == 'cuda' and torch.cuda.is_available():
-        device = torch.device('cuda')
-    elif device == 'mps' and torch.backends.mps.is_available():
-        device = torch.device('mps')
-    else:
-        device = torch.device('cpu')
+def get_bleu_of_checkpoints(checkpoint_path: str,
+                            source_data_path: str,
+                            reference_data_path: str,
+                            source_dict: Dictionary,
+                            reference_dict: Dictionary,
+                            beam_size: int,
+                            window_size: int,
+                            do_beam: bool,
+                            save_path: str):
+    # load data
+    source_data = load_data(source_data_path)
+    reference_data = load_data(reference_data_path)
+    # get all model file paths in checkpoint path
+    model_file_paths = glob.glob(f"{checkpoint_path}/*.pth")
+    # sort for chronological order of checkpoints, if not already
+    model_file_paths.sort()
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    data_points = []
+    for model_path in model_file_paths:
+        model = torch.load(model_path, map_location=device)
+        # get bleu of model
+        bleu_score = get_bleu_of_model(model,
+                                       source_data,
+                                       reference_data,
+                                       source_dict,
+                                       reference_dict,
+                                       beam_size,
+                                       window_size,
+                                       do_beam)
 
-    return device
-
-
-def calculate_bleu(hyps: List[List[str]],
-                   refs: List[List[str]],
-                   beam_size: int) -> float:
-    """
-    Calculate the BLEU score between a reference and a hypothesis.
-    Args: reference: str, the reference translation.
-    hypothesis: str, the hypothesis translation.
-    Returns: The BLEU score.
-    """
-    # flatten in dimension 0
-    hyps = [h for hyp in hyps for h in hyp]
-    refs = [r for r in refs for _ in range(beam_size)]
-    bleu = BLEU()
-    return bleu(refs, hyps)
-
-
-def main():
-    args = parse_args()
-    hyps = create_hyps(args.model_path,
-                       args.source_data_path,
-                       args.target_data_path,
-                       args.source_dict_path,
-                       args.target_dict_path,
-                       args.config_path,
-                       args.beam_search)
-
-    refs = load_data(args.target_data_path)
-
-    # TODO: iterate over a dir of checkpoints and create a graph of BLEU scores
-    print(
-        calculate_bleu(hyps,
-                       refs,
-                2)
-    )
+        data_points.append(bleu_score)
+    print(data_points)
+    file = open(save_path, "w")
+    for entry in data_points:
+        file.write(f" {entry} \n")
+    file.close()
+    return data_points
 
 
-if __name__ == "__main__":
-    main()
+def get_ppl_on_model(model: nn.Module,
+                     eval_data_set_path):
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    eval_set: TranslationDataset = TranslationDataset.load(eval_data_set_path)
+    eval_dataloader = DataLoader(eval_set, batch_size=200, shuffle=False, num_workers=4)
+    step_counter = 0
+    ppl_list = []
+
+    for S, T, L in eval_dataloader:
+        S = S.to(device)
+        T = T.to(device)
+        L = L.long().to(device)
+
+        pred = model(S, T)
+
+        loss = model.compute_loss(pred, L)
+
+        loss.backward()
+
+        # keep track of metrics
+        step_counter += 1
+
+        # print batch metrics
+        batch_perplexity = float(torch.exp(loss))
+        ppl_list.append(batch_perplexity)
+        print(step_counter / len(eval_dataloader))
+    print(sum(ppl_list) / len(ppl_list))
+    # return averaeg ppl over one epoch
+    return sum(ppl_list) / len(ppl_list)
+
+
+def get_ppl_on_checkpoint(checkpoint_path: str,
+                          eval_data_set_path,
+                          save_path: str):
+
+    model_file_paths = glob.glob(f"{checkpoint_path}/*.pth")
+    model_file_paths.sort()
+    ppl_list = []
+    for i, model_path in enumerate(model_file_paths):
+        print(i)
+        model = torch.load(model_path)
+        ppl_list.append(get_ppl_on_model(model, eval_data_set_path))
+    print(ppl_list)
+
+    file = open(save_path, "w")
+    for ppl in ppl_list:
+        file.write(f"{ppl} \n")
+    file.close()
+
+    return ppl_list
+
+
+def plot_data(data_files_list: List[str],
+              data_description: str,
+              save_path: str):
+
+    data_lists = []
+
+    for i, file_path in enumerate(data_files_list):
+        data = load_data(file_path)
+        data = [float(x[0]) for x in data]
+        data_lists.append(data)
+
+    x_points = [x for x in range(1, len(data_lists[0]) + 1)]
+    print(data_lists[0])
+    plt.figure(figsize=(10, 6))
+    colors = ["b", "r", "g"]
+
+    for i, ydata in enumerate(data_lists):
+        plt.plot(x_points, ydata, marker='o', linestyle='-', color=colors[i])
+
+    plt.xlabel('Checkpoint')
+    plt.ylabel(data_description)
+    plt.grid(True)
+    plt.savefig(save_path)
+
+
+def eval_scores(model: nn.Module,
+                source_data: List[List[str]],
+                target_data: List[List[str]],
+                source_dict: Dictionary,
+                target_dict: Dictionary,
+                beam_size=3,
+                translations=None):
+
+    if translations is None:
+        translations = beam_search.translate(model,
+                                             source_data,
+                                             source_dict,
+                                             target_dict,
+                                             beam_size,
+                                             model.window_size)
+        translations = undo_prepocessing(translations)  # get_scores expects no bpe applied data
+
+    reference_score = score.get_scores(model,
+                                       source_data,
+                                       target_data,
+                                       source_dict,
+                                       target_dict,
+                                       model.window_size)
+
+    our_score = score.get_scores(model,
+                                 source_data,
+                                 translations,
+                                 source_dict,
+                                 target_dict,
+                                 model.window_size)
+
+    return sum(our_score) / len(our_score), sum(reference_score) / len(reference_score)

@@ -1,0 +1,12 @@
+optimizer: "Adam"
+learning_rate: 0.01
+batch_size: 200
+shuffle: True
+num_workers: 2
+max_epochs: 100
+print_eval_every: 100
+test_model_every: 100
+checkpoints_per_epoch: 1
+load_model_path: ""
+early_stopping: False
+half_lr: True
