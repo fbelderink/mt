@@ -6,11 +6,13 @@ import torch
 from torch.utils.data import DataLoader
 
 from model.ff.feedforward_net import FeedforwardNet
-from preprocessing.dataset import TranslationDataset
+from preprocessing.dataset.dataset import TranslationDataset
 from utils.hyperparameters.ConfigLoader import ConfigLoader
 from utils.file_manipulation import save_checkpoint
-from utils.hyperparameters.model_hyperparameters import RNNModelHyperparameters, FFModelHyperparameters, ModelHyperparameters
-from utils.hyperparameters.train_hyperparameters import TrainHyperparameters, RNNTrainHyperparameters, FFTrainHyperparameters
+from utils.hyperparameters.model_hyperparameters import RNNModelHyperparameters, FFModelHyperparameters, \
+    ModelHyperparameters
+from utils.hyperparameters.train_hyperparameters import TrainHyperparameters, RNNTrainHyperparameters, \
+    FFTrainHyperparameters
 from model.seq2seq.recurrent_net import RecurrentNet
 
 
@@ -69,8 +71,8 @@ def train(train_path: str, validation_path: str,
 
     total_steps = 0
     checkpoint_rate = train_params.checkpoints if train_params.checkpoints > 1 else 1 / train_params.checkpoints
-    for epoch in range(train_params.max_epochs):
-        print(f"Epoch {epoch + 1}/{train_params.max_epochs}")
+    for epoch in range(1, train_params.max_epochs + 1):
+        print(f"Epoch {epoch}/{train_params.max_epochs}")
 
         total_steps, epoch_loss = train_epoch(model,
                                               train_dataloader, validation_dataloader,
@@ -78,7 +80,7 @@ def train(train_path: str, validation_path: str,
                                               train_params, epoch, total_steps,
                                               checkpoint_rate, train_params.checkpoints > 1)
 
-        if train_params.checkpoints >= 1 and epoch % checkpoint_rate == 0:
+        if train_params.checkpoints <= 1 and epoch % checkpoint_rate == 0:
             save_checkpoint(model, model.model_name)
 
     save_checkpoint(model, model.model_name)
@@ -116,7 +118,10 @@ def train_epoch(model, train_dataloader, validation_dataloader,
             perplexity, accuracy = evaluate_performance(predictions,
                                                         loss.item(),
                                                         L,
-                                                        eos_idx=3 if train_params.ignore_eos_for_acc else -1)
+                                                        eos_idx=3
+                                                        if hasattr(train_params, 'ignore_eos_for_acc') and
+                                                           train_params.ignore_eos_for_acc
+                                                        else -1)
             print(f"steps: {steps}, epoch: {epoch_num}")
             print(f"batch metrics: accuracy: {accuracy}, perplexity: {perplexity}, loss: {loss.item()}\n")
 
@@ -161,9 +166,13 @@ def test_on_validation_data(model, validation_dataloader, train_params):
     validation_perplexity, validation_accuracy = evaluate_performance(predictions,
                                                                       loss.item(),
                                                                       L,
-                                                                      eos_idx=3 if train_params.ignore_eos_for_acc else -1)
+                                                                      eos_idx=3
+                                                                      if hasattr(train_params, 'ignore_eos_for_acc') and
+                                                                         train_params.ignore_eos_for_acc
+                                                                      else -1)
 
-    print(f"validation results: accuracy: {validation_accuracy}, perplexity: {validation_perplexity}, loss: {loss.item()}\n")
+    print(
+        f"validation results: accuracy: {validation_accuracy}, perplexity: {validation_perplexity}, loss: {loss.item()}\n")
 
     model.train()
 

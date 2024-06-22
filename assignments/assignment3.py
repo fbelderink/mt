@@ -2,7 +2,7 @@ import torch
 from preprocessing.BPE import generate_bpe
 from model.layers.linear import LinearLayer
 from preprocessing.dictionary import Dictionary
-from preprocessing.dataset import FFTranslationDataset
+from preprocessing.dataset.dataset import FFTranslationDataset
 
 
 def test_linear_layer():
