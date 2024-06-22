@@ -1,9 +1,9 @@
 import argparse
-from assignments.assignment4 import *
 from utils.ConfigLoader import ConfigLoader
 from utils.model_hyperparameters import RNNModelHyperparameters
 from utils.train_hyperparameters import RNNTrainHyperparameters
 from training.train import train
+from preprocessing.dictionary import Dictionary
 
 
 def _parse_arguments() -> argparse.Namespace:
