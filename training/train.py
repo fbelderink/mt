@@ -121,6 +121,8 @@ def train_epoch(model, train_dataloader, validation_dataloader,
                                                         label)
             print(f"steps: {steps}, epoch: {epoch_num}")
             print(f"batch metrics: accuracy: {accuracy}, perplexity: {perplexity}, loss: {loss.item()}\n")
+            print(torch.argmax(predictions, dim=1)[1])
+            print(label[1])
         if train_params.test_model_every != 0 and steps % train_params.test_model_every == 0:
             val_ppl, val_acc = test_on_validation_data(model, validation_dataloader, train_params)
 
@@ -175,7 +177,7 @@ def test_on_validation_data(model, validation_dataloader, train_params):
 def forward_pass(model, source, target, label, train_params):
     if isinstance(train_params, RNNTrainHyperparameters):
         predictions = model(source, target,
-                            teacher_forcing=train_params.teacher_forcing,)
+                            teacher_forcing=train_params.teacher_forcing)
     elif isinstance(train_params, FFTrainHyperparameters):
         predictions = model(source, target)
         predictions = predictions.unsqueeze(-1)
@@ -187,12 +189,12 @@ def forward_pass(model, source, target, label, train_params):
     return predictions, loss
 
 
-def evaluate_performance(predictions, loss, L):
+def evaluate_performance(predictions, loss, labels):
     # predictions shape (B x dict_size x seq_len)
     # L shape (B x seq_len)
     correct = 0
     samples = 0
-    for ps, ls in zip(torch.argmax(predictions, dim=1), L):
+    for ps, ls in zip(torch.argmax(predictions, dim=1), labels):
         for p, l in zip(ps, ls):
             if l != PADDING:
                 # only count matching non eos symbols

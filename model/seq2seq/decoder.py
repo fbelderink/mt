@@ -74,18 +74,12 @@ class AttentionDecoder(nn.Module):
                 teacher_forcing=False, apply_log_softmax=True):
 
         prob_dists = []
-        # expected shape (B x 1)
+        # expected target_tensor shape: (B x seq_len)
+        target_word = target_tensor[:, 1].unsqueeze(1)
 
         prev_decoder_state = encoder_state
 
-        decoder_predictions = torch.ones(target_tensor.size(0), 1).to(target_tensor.device) * START
-
-        for k in range(target_tensor.size(1) - 1):
-
-            if teacher_forcing:
-                target_word = target_tensor[:, k].unsqueeze(1)
-            else:
-                target_word = decoder_predictions
+        for k in range(1, target_tensor.size(1)):
 
             fc_out, prev_decoder_state = self.forward_step(encoder_outputs,
                                                            prev_decoder_state,
@@ -93,7 +87,10 @@ class AttentionDecoder(nn.Module):
                                                            apply_log_softmax)
             # fc_out shape (B x 1 x target_dict_size)
 
-            decoder_predictions = torch.argmax(fc_out, dim=-1)
+            if teacher_forcing:
+                target_word = target_tensor[:, k].unsqueeze(1)
+            else:
+                target_word = torch.argmax(fc_out, dim=-1)
 
             prob_dists.append(fc_out)
         return torch.cat(prob_dists, dim=1)
