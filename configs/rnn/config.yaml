@@ -4,6 +4,8 @@ encoder_parameters:
 decoder_parameters:
   embed_dim: 100
   dropout_rate: 0.0
-lstm_layers: 1
-lstm_hidden_dim: 10
-lstm_bidirectional: True
+rnn_type: 'gru'
+rnn_layers: 1
+rnn_hidden_dim: 200
+rnn_bidirectional: True
+use_attention: True
