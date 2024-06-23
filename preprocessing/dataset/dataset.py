@@ -1,7 +1,7 @@
 from __future__ import annotations
 import torch
 from torch.utils.data import Dataset
-from preprocessing.dictionary import Dictionary
+from preprocessing.dictionary import Dictionary, PADDING_SYMBOL, START_SYMBOL, END_SYMBOL
 from preprocessing.batching.fragment import fragment_data_to_indices
 from typing import List
 import numpy as np
@@ -14,7 +14,6 @@ class TranslationDataset(Dataset):
         super(TranslationDataset, self).__init__()
         self._source_dict_size = len(source_dict)
         self._target_dict_size = len(target_dict)
-        self._eos_idx = target_dict.get_index_of_string('</s>')
 
     @staticmethod
     def load(path):
@@ -29,9 +28,6 @@ class TranslationDataset(Dataset):
 
     def get_target_dict_size(self):
         return self._target_dict_size
-
-    def get_eos_idx(self):
-        return self._eos_idx
 
 
 class FFTranslationDataset(TranslationDataset):
@@ -74,9 +70,15 @@ class RNNTranslationDataset(TranslationDataset):
 
         T_max = len(max(filtered_source_data + filtered_target_data, key=lambda sentence: len(sentence)))
 
-        filtered_source_data = [sentence + ['</s>'] * (T_max - len(sentence)) for sentence in filtered_source_data]
-        filtered_target_data = [['<s>'] + sentence + ['</s>'] * (T_max - len(sentence)) for sentence in
-                                filtered_target_data]
+        filtered_source_data = [sentence +
+                                [START_SYMBOL] +
+                                [PADDING_SYMBOL] * (T_max - len(sentence))
+                                for sentence in filtered_source_data]
+        filtered_target_data = [[START_SYMBOL] +
+                                sentence +
+                                [END_SYMBOL] +
+                                [PADDING_SYMBOL] * (T_max - len(sentence))
+                                for sentence in filtered_target_data]
 
         get_source_index = np.vectorize(source_dict.get_index_of_string)
         get_target_index = np.vectorize(target_dict.get_index_of_string)
@@ -90,4 +92,3 @@ class RNNTranslationDataset(TranslationDataset):
 
     def __getitem__(self, idx):
         return self._source_data[idx], self._target_data[idx], self._labels[idx]
-
