@@ -1,4 +1,6 @@
 import torch.nn as nn
+import torch
+
 from model.basic_net import BasicNet
 from model.seq2seq.encoder import Encoder
 from model.seq2seq.decoder import AttentionDecoder
@@ -43,16 +45,18 @@ class RecurrentNet(BasicNet):
 
     def forward(self, source, target,
                 teacher_forcing=False, apply_log_softmax=True):
-        encoder_outputs, encoder_state = self.encoder(source)
+        flipped_source = torch.flip(source, dims=[1])
+        encoder_outputs, encoder_state = self.encoder(flipped_source)
 
         decoder_outputs = self.decoder(encoder_outputs, encoder_state, target,
                                        teacher_forcing=teacher_forcing,
                                        apply_log_softmax=apply_log_softmax)
 
+        decoder_outputs = decoder_outputs.permute(0, 2, 1)
+
         return decoder_outputs
 
     def compute_loss(self, pred, label):
-        pred = pred.permute(0, 2, 1)
         # pred shape (B x target_dict_size x seq_len)
 
         return self.criterion(pred, label)

@@ -1,10 +1,10 @@
 encoder_parameters:
-  embed_dim: 100
+  embed_dim: 150
   dropout_rate: 0.0
 decoder_parameters:
-  embed_dim: 100
+  embed_dim: 150
   dropout_rate: 0.0
-rnn_type: 'gru'
+rnn_type: 'lstm'
 rnn_layers: 1
 rnn_hidden_dim: 200
 rnn_bidirectional: True
