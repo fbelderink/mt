@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import torch.nn as nn
-from preprocessing.dictionary import Dictionary
+from preprocessing.dictionary import Dictionary, START_SYMBOL, END_SYMBOL
 from preprocessing.batching.fragment import create_source_window_matrix
 from typing import List
 
@@ -31,10 +31,10 @@ def translate(model: nn.Module,
 
         S = torch.from_numpy(S).to(device)
 
-        beam_targets = torch.from_numpy(get_target_idx([['<s>'] * window_size])).to(device)
+        beam_targets = torch.from_numpy(get_target_idx([[START_SYMBOL] * window_size])).to(device)
 
         top_k_values = [0]
-        top_k_indices = [[target_dict.get_index_of_string("<s>")] * window_size] * beam_size
+        top_k_indices = [[target_dict.get_index_of_string(START_SYMBOL)] * window_size] * beam_size
 
         for s in S:
             # expand to make first dimension fit beam_size
