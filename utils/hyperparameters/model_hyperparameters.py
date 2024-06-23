@@ -26,6 +26,8 @@ class RNNModelHyperparameters(ModelHyperparameters):
         self.encoder_parameters = [x for x in list(config["encoder_parameters"].values())]
         self.decoder_parameters = [x for x in list(config["decoder_parameters"].values())]
 
-        self.lstm_layers = config["lstm_layers"]
-        self.lstm_hidden_dim = config["lstm_hidden_dim"]
-        self.lstm_bidirectional = config["lstm_bidirectional"]
+        self.rnn_type = config["rnn_type"]
+        self.rnn_layers = config["rnn_layers"]
+        self.rnn_hidden_dim = config["rnn_hidden_dim"]
+        self.rnn_bidirectional = config["rnn_bidirectional"]
+        self.use_attention = config["use_attention"]
