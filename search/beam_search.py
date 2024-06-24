@@ -4,9 +4,53 @@ import torch.nn as nn
 from preprocessing.dictionary import Dictionary
 from preprocessing.batching.fragment import create_source_window_matrix
 from typing import List
+from model.seq2seq.recurrent_net import RecurrentNet
 
 
-def translate(model: nn.Module,
+def translate_rnn(model: nn.Module,
+                  source_data: List[List[str]],
+                  source_dict: Dictionary,
+                  target_dict: Dictionary,
+                  beam_size: int,
+                  window_size: int,
+                  get_n_best=False,
+                  alignment_factor=1):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    model = model.to(device)
+    model.eval()
+
+    source_data = source_dict.apply_vocabulary_to_text(source_data, bpe_performed=False)
+
+    get_source_idx = np.vectorize(source_dict.get_index_of_string)
+    get_target_idx = np.vectorize(target_dict.get_index_of_string)
+    get_target_string = np.vectorize(target_dict.get_string_at_index)
+
+    T_max = len(max(source_data, key=lambda sentence: len(sentence)))
+    filtered_source_data = [sentence + ['</s>'] * (T_max - len(sentence)) for sentence in source_data]
+
+    for sentence in source_data:
+        S = torch.from_numpy(get_source_idx(np.array(filtered_source_data)))
+        next_target_token = 0
+        decoder_state = None
+        for s in S:
+            # run through encoder
+            encoder_outputs, encoder_state = model.encoder(s)
+            # run through decoder
+            fc_out, decoder_state = model.decoder(encoder_outputs,
+                                                  encoder_state,
+                                                  next_target_token,
+                                                  decoder_state)
+
+
+
+
+
+
+
+
+
+def translate_ff(model: nn.Module,
               source_data: List[List[str]],
               source_dict: Dictionary,
               target_dict: Dictionary,
@@ -14,6 +58,7 @@ def translate(model: nn.Module,
               window_size: int,
               get_n_best=False,
               alignment_factor=1):
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     model = model.to(device)

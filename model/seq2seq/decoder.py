@@ -82,7 +82,11 @@ class AttentionDecoder(nn.Module):
 
         return torch.stack(prob_dists).permute(1, 0, 2)
 
-    def forward_step(self, encoder_outputs, state, target_word, apply_log_softmax=True):
+    def forward_step(self,
+                     encoder_outputs,
+                     state,
+                     target_word,
+                     apply_log_softmax=True):
         decoder_outputs, state = self.decoder(target_word, state)
 
         context_vector = self.attention(encoder_outputs, decoder_outputs)
