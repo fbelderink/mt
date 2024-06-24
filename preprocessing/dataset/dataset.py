@@ -71,7 +71,7 @@ class RNNTranslationDataset(TranslationDataset):
         T_max = len(max(filtered_source_data + filtered_target_data, key=lambda sentence: len(sentence)))
 
         filtered_source_data = [sentence +
-                                [START_SYMBOL] +
+                                [END_SYMBOL] +
                                 [PADDING_SYMBOL] * (T_max - len(sentence))
                                 for sentence in filtered_source_data]
         filtered_target_data = [[START_SYMBOL] +
