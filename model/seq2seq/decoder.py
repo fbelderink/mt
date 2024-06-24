@@ -95,7 +95,11 @@ class AttentionDecoder(nn.Module):
             prob_dists.append(fc_out)
         return torch.cat(prob_dists, dim=1)
 
-    def forward_step(self, encoder_outputs, prev_state, target_word, apply_log_softmax=True):
+    def forward_step(self,
+                     encoder_outputs,
+                     prev_state,
+                     target_word,
+                     apply_log_softmax=True):
         # encoder_outputs shape: (B x seq_len x hidden * directions)
         # hidden_state shape: (B x 1 x hidden * directions)
         embedded = self.embedding(target_word)

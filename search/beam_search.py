@@ -7,14 +7,39 @@ from typing import List
 from model.seq2seq.recurrent_net import RecurrentNet
 
 
+def translate(model: nn.Module,
+              source_data: List[List[str]],
+              source_dict: Dictionary,
+              target_dict: Dictionary,
+              beam_size: int,
+              window_size: int=3,
+              get_n_best=False,
+              alignment_factor=1):
+
+    if isinstance(model, RecurrentNet):
+        return translate_rnn(model,
+                             source_data,
+                             source_dict,
+                             target_dict,
+                             beam_size,
+                             get_n_best)
+    else:
+        return translate_ff(model,
+                            source_data,
+                            source_dict,
+                            target_dict,
+                            beam_size,
+                            window_size,
+                            get_n_best,
+                            alignment_factor)
+
 def translate_rnn(model: nn.Module,
                   source_data: List[List[str]],
                   source_dict: Dictionary,
                   target_dict: Dictionary,
                   beam_size: int,
-                  window_size: int,
-                  get_n_best=False,
-                  alignment_factor=1):
+                  get_n_best=False):
+
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     model = model.to(device)
@@ -24,27 +49,61 @@ def translate_rnn(model: nn.Module,
 
     get_source_idx = np.vectorize(source_dict.get_index_of_string)
     get_target_idx = np.vectorize(target_dict.get_index_of_string)
-    get_target_string = np.vectorize(target_dict.get_string_at_index)
 
     T_max = len(max(source_data, key=lambda sentence: len(sentence)))
     filtered_source_data = [sentence + ['</s>'] * (T_max - len(sentence)) for sentence in source_data]
+    S = torch.from_numpy(get_source_idx(np.array(filtered_source_data)))
 
-    for sentence in source_data:
-        S = torch.from_numpy(get_source_idx(np.array(filtered_source_data)))
-        next_target_token = 0
-        decoder_state = None
-        for s in S:
-            # run through encoder
-            encoder_outputs, encoder_state = model.encoder(s)
-            # run through decoder
-            fc_out, decoder_state = model.decoder(encoder_outputs,
-                                                  encoder_state,
-                                                  next_target_token,
-                                                  decoder_state)
+    target_sentences = []
 
+    for s in S:
+        encoder_outputs, encoder_state = model.encoder(s)
+        beam_targets = torch.from_numpy(get_target_idx([[START_SYMBOL]]))
+        decoder_state = encoder_state
+        # run through decoder
+        prob_dists = []
 
+        top_k_values = [0]
+        top_k_indices = [[target_dict.get_index_of_string(START_SYMBOL)]] * beam_size
 
+        for beam in beam_targets:
+            fc_out, decoder_state = model.decoder.forward_step(encoder_outputs,
+                                                               decoder_state,
+                                                               beam)
+            prob_dists.append(fc_out)
 
+        top_k = torch.cat(prob_dists, dim=1).topk(beam_size, dim=-1)
+
+        top_k += torch.tensor(top_k_values).unsqueeze(1).to(device)
+
+        # TODO: fix dimensions (probably)
+
+        if beam_targets.shape[0] == 1:
+            # only applies in first iteration, when beam targets have one dim only
+            beam_targets = beam_targets.repeat(beam_size, 1)
+
+            # we flattened the prediction vector, so find out to which previous predictions new top k indices belong
+            previous_indices = [i // len(target_dict) for i in top_k.indices.squeeze(0).tolist()]
+
+            # get indices in target vocab range (also has to happen because of flattening)
+            current_indices = [i % len(target_dict) for i in top_k.indices.squeeze(0).tolist()]
+
+            # init list to record new top k predictions
+            new_top_k_indices = []
+
+            for i in range(beam_size):
+                # select correct previous list and add new index
+                new_top_k_indices.append(top_k_indices[previous_indices[i]] + [current_indices[i]])
+
+                # replace indices in input for net
+                beam_targets[i] = torch.tensor(new_top_k_indices[i][-window_size:]).to(device)
+
+            # record current best values
+            top_k_values = top_k.values.squeeze(0).tolist()
+            # replace top k indices with newly found best indices
+            top_k_indices = new_top_k_indices
+
+    return target_sentences
 
 
 
