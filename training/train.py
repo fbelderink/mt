@@ -7,11 +7,15 @@ from torch.utils.data import DataLoader
 
 from model.ff.feedforward_net import FeedforwardNet
 from preprocessing.dataset.dataset import TranslationDataset
-from utils.ConfigLoader import ConfigLoader
+from utils.hyperparameters.ConfigLoader import ConfigLoader
 from utils.file_manipulation import save_checkpoint
-from utils.model_hyperparameters import RNNModelHyperparameters, FFModelHyperparameters, ModelHyperparameters
-from utils.train_hyperparameters import TrainHyperparameters, RNNTrainHyperparameters, FFTrainHyperparameters
+from utils.hyperparameters.model_hyperparameters import RNNModelHyperparameters, FFModelHyperparameters, \
+    ModelHyperparameters
+from utils.hyperparameters.train_hyperparameters import TrainHyperparameters, RNNTrainHyperparameters, \
+    FFTrainHyperparameters
 from model.seq2seq.recurrent_net import RecurrentNet
+
+from preprocessing.dictionary import PADDING
 
 
 def train(train_path: str, validation_path: str,
@@ -38,7 +42,6 @@ def train(train_path: str, validation_path: str,
         model = RecurrentNet(train_set.get_source_dict_size(),
                              train_set.get_target_dict_size(),
                              model_params,
-                             train_set.get_eos_idx(),
                              model_name).to(device)
 
         if train_params.two_optimizers:
@@ -69,8 +72,8 @@ def train(train_path: str, validation_path: str,
 
     total_steps = 0
     checkpoint_rate = train_params.checkpoints if train_params.checkpoints > 1 else 1 / train_params.checkpoints
-    for epoch in range(train_params.max_epochs):
-        print(f"Epoch {epoch + 1}/{train_params.max_epochs}")
+    for epoch in range(1, train_params.max_epochs + 1):
+        print(f"Epoch {epoch}/{train_params.max_epochs}")
 
         total_steps, epoch_loss = train_epoch(model,
                                               train_dataloader, validation_dataloader,
@@ -78,7 +81,7 @@ def train(train_path: str, validation_path: str,
                                               train_params, epoch, total_steps,
                                               checkpoint_rate, train_params.checkpoints > 1)
 
-        if train_params.checkpoints >= 1 and epoch % checkpoint_rate == 0:
+        if 0 < train_params.checkpoints <= 1 and epoch % checkpoint_rate == 0:
             save_checkpoint(model, model.model_name)
 
     save_checkpoint(model, model.model_name)
@@ -93,16 +96,16 @@ def train_epoch(model, train_dataloader, validation_dataloader,
     epoch_loss = 0
     previous_val_ppl = 0
 
-    for S, T, L in train_dataloader:
-        S = S.to(device)
-        T = T.to(device)
-        L = L.to(device)
+    for source, target, label in train_dataloader:
+        source = source.to(device)
+        target = target.to(device)
+        label = label.to(device)
 
         # TRAIN LOOP
         for optimizer in optimizers:
             optimizer.zero_grad()
 
-        predictions, loss = forward_pass(model, S, T, L, train_params)
+        predictions, loss = forward_pass(model, source, target, label, train_params)
 
         loss.backward()
 
@@ -115,14 +118,15 @@ def train_epoch(model, train_dataloader, validation_dataloader,
         if steps % train_params.print_eval_every == 0:
             perplexity, accuracy = evaluate_performance(predictions,
                                                         loss.item(),
-                                                        L,
-                                                        eos_idx=3 if train_params.ignore_eos_for_acc else -1)
+                                                        label)
             print(f"steps: {steps}, epoch: {epoch_num}")
             print(f"batch metrics: accuracy: {accuracy}, perplexity: {perplexity}, loss: {loss.item()}\n")
-
+            print(torch.argmax(predictions, dim=1)[1])
+            print(label[1])
         if train_params.test_model_every != 0 and steps % train_params.test_model_every == 0:
             val_ppl, val_acc = test_on_validation_data(model, validation_dataloader, train_params)
 
+            #TODO use bleu
             if train_params.early_stopping and 0 < previous_val_ppl <= val_ppl:
                 print("EARLY STOPPING")
                 return
@@ -149,51 +153,50 @@ def test_on_validation_data(model, validation_dataloader, train_params):
 
     model.eval()
 
-    S, T, L = next(iter(validation_dataloader))
+    source, target, label = next(iter(validation_dataloader))
     # only one iteration as batch_size = len(validation_set)
 
-    S = S.to(device)
-    T = T.to(device)
-    L = L.to(device)
+    source = source.to(device)
+    target = target.to(device)
+    label = label.to(device)
 
-    predictions, loss = forward_pass(model, S, T, L, train_params)
+    predictions, loss = forward_pass(model, source, target, label, train_params)
 
     validation_perplexity, validation_accuracy = evaluate_performance(predictions,
                                                                       loss.item(),
-                                                                      L,
-                                                                      eos_idx=3 if train_params.ignore_eos_for_acc else -1)
+                                                                      label)
 
-    print(f"validation results: accuracy: {validation_accuracy}, perplexity: {validation_perplexity}, loss: {loss.item()}\n")
+    print(
+        f"validation results: accuracy: {validation_accuracy}, perplexity: {validation_perplexity}, loss: {loss.item()}\n")
 
     model.train()
 
     return validation_perplexity, validation_accuracy
 
 
-def forward_pass(model, S, T, L, train_params):
+def forward_pass(model, source, target, label, train_params):
     if isinstance(train_params, RNNTrainHyperparameters):
-        predictions = model(S, T,
-                            teacher_forcing=train_params.teacher_forcing,
-                            T_max=T.size(1))
+        predictions = model(source, target,
+                            teacher_forcing=train_params.teacher_forcing)
     elif isinstance(train_params, FFTrainHyperparameters):
-        predictions = model(S, T)
+        predictions = model(source, target)
         predictions = predictions.unsqueeze(-1)
     else:
         raise ValueError('Invalid train hyperparameters')
 
-    loss = model.compute_loss(predictions, L)
+    loss = model.compute_loss(predictions, label)
 
     return predictions, loss
 
 
-def evaluate_performance(predictions, loss, L, eos_idx=-1):
+def evaluate_performance(predictions, loss, labels):
     # predictions shape (B x dict_size x seq_len)
     # L shape (B x seq_len)
     correct = 0
     samples = 0
-    for ps, ls in zip(torch.argmax(predictions, dim=1), L):
+    for ps, ls in zip(torch.argmax(predictions, dim=1), labels):
         for p, l in zip(ps, ls):
-            if l != eos_idx:
+            if l != PADDING:
                 # only count matching non eos symbols
                 if p == l:
                     correct += 1

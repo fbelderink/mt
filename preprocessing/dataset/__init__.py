@@ -1,1 +1,1 @@
-from .dataset import RNNTranslationDataset
+from .dataset import RNNTranslationDataset, FFTranslationDataset

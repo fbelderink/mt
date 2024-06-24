@@ -1,45 +1,65 @@
 import torch.nn as nn
+import torch
+
 from model.basic_net import BasicNet
 from model.seq2seq.encoder import Encoder
 from model.seq2seq.decoder import AttentionDecoder
-from utils.model_hyperparameters import RNNModelHyperparameters
+from utils.hyperparameters.model_hyperparameters import RNNModelHyperparameters
+from preprocessing.dictionary import PADDING
+from utils.types import RNNType
 
 
 class RecurrentNet(BasicNet):
-    def __init__(self, source_dict_size, target_dict_size, config: RNNModelHyperparameters, eos_idx, model_name="rnn"):
+    def __init__(self,
+                 source_dict_size,
+                 target_dict_size,
+                 config: RNNModelHyperparameters,
+                 model_name="rnn"):
         super(RecurrentNet, self).__init__(source_dict_size, target_dict_size, config, model_name)
 
-        self.encoder = Encoder(source_dict_size,
+        if config.rnn_type == 'lstm':
+            rnn_type = RNNType.LSTM
+        elif config.rnn_type == 'gru':
+            rnn_type = RNNType.GRU
+        else:
+            raise ValueError("Unsupported rnn type")
+
+        self.encoder = Encoder(rnn_type,
+                               source_dict_size,
                                config.encoder_parameters[0],
-                               config.lstm_hidden_dim,
-                               config.lstm_layers,
+                               config.rnn_hidden_dim,
+                               config.rnn_layers,
                                config.encoder_parameters[1],
-                               config.lstm_bidirectional)
+                               config.rnn_bidirectional)
 
-        self.decoder = AttentionDecoder(target_dict_size,
+        self.decoder = AttentionDecoder(rnn_type,
+                                        target_dict_size,
                                         config.decoder_parameters[0],
-                                        config.lstm_hidden_dim,
-                                        config.lstm_layers,
+                                        config.rnn_hidden_dim,
+                                        config.rnn_layers,
                                         config.decoder_parameters[1],
-                                        config.lstm_bidirectional)
+                                        config.rnn_bidirectional,
+                                        config.use_attention)
 
-        self.criterion = nn.CrossEntropyLoss(ignore_index=eos_idx)
+        self.criterion = nn.CrossEntropyLoss(ignore_index=PADDING)
 
-    def forward(self, S, T, T_max=-1,
+    def forward(self, source, target,
                 teacher_forcing=False, apply_log_softmax=True):
+        flipped_source = torch.flip(source, dims=[1])
+        encoder_outputs, encoder_state = self.encoder(flipped_source)
 
-        encoder_outputs, encoder_state = self.encoder(S)
-        decoder_outputs = self.decoder(encoder_outputs, encoder_state, T,
+        decoder_outputs = self.decoder(encoder_outputs, encoder_state, target,
                                        teacher_forcing=teacher_forcing,
-                                       T_max=T_max,
                                        apply_log_softmax=apply_log_softmax)
+
+        decoder_outputs = decoder_outputs.permute(0, 2, 1)
 
         return decoder_outputs
 
-    def compute_loss(self, pred, L):
-        pred = pred.permute(0, 2, 1)
+    def compute_loss(self, pred, label):
+        # pred shape (B x target_dict_size x seq_len)
 
-        return self.criterion(pred, L)
+        return self.criterion(pred, label)
 
     def get_encoder(self):
         return self.encoder

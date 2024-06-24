@@ -6,11 +6,16 @@ from preprocessing.dictionary import Dictionary
 from dataset import RNNTranslationDataset, FFTranslationDataset
 
 
-def _create_dict(data: List[List[str]], num_operations, save_path) -> Dictionary:
+def _create_dict(data: List[List[str]],
+                 num_operations,
+                 save_path) -> Dictionary:
+    print("started creating dictionary")
     ops = generate_bpe(data, num_operations)
     dictionary = Dictionary(data, ops)
+    print("finished creating dictionary")
     if save_path:
         dictionary.save(save_path)
+        print(f"saved dictionary at {save_path}")
     return dictionary
 
 
@@ -21,7 +26,7 @@ def _generate_dataset_rnn(source_data: List[List[str]],
                           dict_de_save_path=None,
                           dict_en=None,
                           dict_en_save_path=None,
-                          save_path=None) -> RNNTranslationDataset:
+                          save_path=None) -> (RNNTranslationDataset, Dictionary, Dictionary):
     if not dict_de:
         dict_de = _create_dict(source_data, num_operations, dict_de_save_path)
 
@@ -33,7 +38,7 @@ def _generate_dataset_rnn(source_data: List[List[str]],
     if save_path is not None:
         dataset.save(save_path)
 
-    return dataset
+    return dataset, dict_de, dict_en
 
 
 def _generate_dataset_ff(source_data: List[List[str]],
@@ -44,19 +49,19 @@ def _generate_dataset_ff(source_data: List[List[str]],
                          dict_de_save_path=None,
                          dict_en=None,
                          dict_en_save_path=None,
-                         save_path=None) -> FFTranslationDataset:
+                         save_path=None) -> (FFTranslationDataset, Dictionary, Dictionary):
     if not dict_de:
-        dict_de = _create_dict(source_data, num_operations, dict_de_save_path)
+        dict_de = _create_dict(source_data, num_operations, None, dict_de_save_path)
 
     if not dict_en:
-        dict_en = _create_dict(target_data, num_operations, dict_en_save_path)
+        dict_en = _create_dict(target_data, num_operations, None, dict_en_save_path)
 
     dataset = FFTranslationDataset(source_data, target_data, dict_de, dict_en, window_size)
 
     if save_path is not None:
         dataset.save(save_path)
 
-    return dataset
+    return dataset, dict_de, dict_en
 
 
 def _parse_arguments() -> argparse.Namespace:
@@ -104,7 +109,7 @@ if __name__ == "__main__":
 
     if args.gen_rnn:
         print("start generating rnn training dataset")
-        _generate_dataset_rnn(data_de, data_en, args.bpe_operations,
+        _, dict_de, dict_en = _generate_dataset_rnn(data_de, data_en, args.bpe_operations,
                               dict_de, args.dict_de_path,
                               dict_en, args.dict_en_path,
                               args.train_dataset_save_path_rnn)
@@ -119,7 +124,7 @@ if __name__ == "__main__":
 
     if args.gen_ff:
         print("start generating ff training dataset")
-        _generate_dataset_ff(data_de, data_en, args.bpe_operations, args.window_size,
+        _, dict_de, dict_en = _generate_dataset_ff(data_de, data_en, args.bpe_operations, args.window_size,
                              dict_de, args.dict_de_path,
                              dict_en, args.dict_en_path,
                              args.train_dataset_save_path_ff)

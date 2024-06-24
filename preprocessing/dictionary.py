@@ -2,15 +2,30 @@ from typing import List
 from preprocessing.BPE import perform_bpe
 import pickle
 
+UNK = 0
+START = 1
+END = 2
+PADDING = 3
+
+UNK_SYMBOL = '<UNK>'
+START_SYMBOL = '<s>'
+END_SYMBOL = '</s>'
+PADDING_SYMBOL = '<pad>'
+
 
 class Dictionary:
     # Initialize the dictionary
-    def __init__(self, data: List[List[str]], operations: List[List[str]], transformed_words=None):
+    def __init__(self,
+                 data: List[List[str]],
+                 operations: List[List[str]],
+                 transformed_words=None):
         self._word_to_idx_vocab = dict()
         self._idx_to_word_vocab = dict()
         self._operations = operations
 
-        self._generate_vocabulary(data, operations, transformed_words)
+        self._generate_vocabulary(data,
+                                  operations,
+                                  transformed_words=transformed_words)
 
     def __str__(self):
         # Return a string representation of the dictionary's contents
@@ -31,6 +46,7 @@ class Dictionary:
 
     def get_string_at_index(self, index: int):
         # Retrieve the string at a given index in the dictionary or return UNK
+        # check if index is padding idx
         if index in self:
             return self._idx_to_word_vocab[index]
 
@@ -55,16 +71,23 @@ class Dictionary:
         self._word_to_idx_vocab.clear()
         self._idx_to_word_vocab.clear()
 
-    def _generate_vocabulary(self, data: List[List[str]], operations: List[List[str]], transformed_words=None):
+    def _generate_vocabulary(self,
+                             data: List[List[str]],
+                             operations: List[List[str]],
+                             transformed_words=None,
+                             padding: str = None):
         # save the words with operations applied to them so that the
         # operations don't have to be performed twice for the same word
         if not transformed_words:
             _, transformed_words = perform_bpe(data, operations)
 
         self.empty()
-        self.add_string("<UNK>")
-        self.add_string("<s>")
-        self.add_string("</s>")
+        self.add_string(UNK_SYMBOL)
+        self.add_string(START_SYMBOL)
+        self.add_string(END_SYMBOL)
+        if padding:
+            self.add_string(PADDING_SYMBOL)
+
         for split_word in transformed_words.values():
             for token in split_word.split():
                 if not (token in self):

@@ -1,5 +1,5 @@
 from typing import List
-from preprocessing.dictionary import Dictionary
+from preprocessing.dictionary import Dictionary, START_SYMBOL, END_SYMBOL, UNK_SYMBOL
 import numpy as np
 
 
@@ -40,7 +40,7 @@ def _append_eos_to_sentences(data: List[List[str]]):
     Returns: List of sentences with EOS symbol appended.
 
     """
-    return [sentence + ['</s>'] for sentence in data]
+    return [sentence + [END_SYMBOL] for sentence in data]
 
 
 def _get_target_labels(target_data: List[List[str]]):
@@ -73,14 +73,14 @@ def _get_padded_sentence(sentence: List[str], indices: tuple):
 
     # pad with SOS if first index is below 0
     if indices[0] <= 0:
-        padded_sentence = ['<s>'] * (abs(indices[0]) + 1)
+        padded_sentence = [START_SYMBOL] * (abs(indices[0]) + 1)
 
     if indices[1] <= len(sentence):
         # append requested subsentence
         padded_sentence += sentence[max(0, indices[0] - 1): indices[1]]
     else:
         # append requested subsentence and pad with EOS if last index is above sentence length
-        padded_sentence += sentence[max(0, indices[0] - 1):] + (['</s>'] * (indices[1] - len(sentence)))
+        padded_sentence += sentence[max(0, indices[0] - 1):] + ([END_SYMBOL] * (indices[1] - len(sentence)))
 
     return padded_sentence
 
@@ -142,7 +142,7 @@ def _get_source_window_matrix(source_data: List[List[str]], target_data: List[Li
 def create_source_window_matrix(source_data: List[str], source_dict: Dictionary, window_size: int, target_length: int):
 
     # calculate matrices for complete data
-    source_window_mat = _get_source_window_matrix([source_data], [['<UNK>'] * target_length], window_size)
+    source_window_mat = _get_source_window_matrix([source_data], [[UNK_SYMBOL] * target_length], window_size)
 
     get_source_idx = np.vectorize(source_dict.get_index_of_string)
 
