@@ -38,11 +38,11 @@ if __name__ == "__main__":
     dict_de = Dictionary.load("data/dicts/train_dict_de.pkl")
     dict_en = Dictionary.load("data/dicts/train_dict_en.pkl")
 
-    #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    #model = torch.load("eval/best_models/bleu28_6_w3.pth", map_location=device)
+    model = torch.load("eval/best_models/rnn/22_15_05.pth", map_location=device)
 
-    #translations = test_beam_search(model, data_de_dev, dict_de, dict_en, 3, model.window_size, get_n_best=True)
+    translations = test_beam_search(model, data_de_dev, dict_de, dict_en, 3, 0, get_n_best=True)
 
     #translations = load_data("eval/translations/best_translations")
 
