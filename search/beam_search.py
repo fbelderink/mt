@@ -1,11 +1,11 @@
 import torch
 import numpy as np
+import torch.nn as nn
 from model.seq2seq.recurrent_net import RecurrentNet
 from model.ff.feedforward_net import FeedforwardNet
 from preprocessing.dictionary import Dictionary, START_SYMBOL, END_SYMBOL, PADDING_SYMBOL
 from preprocessing.batching.fragment import create_source_window_matrix
 from typing import List
-from torch import nn
 
 
 def translate(model: nn.Module,

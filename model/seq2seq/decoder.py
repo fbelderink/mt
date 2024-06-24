@@ -101,7 +101,8 @@ class AttentionDecoder(nn.Module):
                      target_word,
                      apply_log_softmax=True):
         # encoder_outputs shape: (B x seq_len x hidden * directions)
-        # hidden_state shape: (B x 1 x hidden * directions)
+        # hidden_state shape: (directions * num_layers x B x hidden)
+        # target word shape: (B x 1)
         embedded = self.embedding(target_word)
         embedded = F.relu(embedded)
         # embedded shape (B x 1 x embed_dim)
