@@ -6,6 +6,8 @@ from typing import List
 from postprocessing.postprocessing import undo_prepocessing
 from metrics.metrics import BLEU
 from torchtext.data.metrics import bleu_score as torch_bleu
+from model.ff.feedforward_net import FeedforwardNet
+from model.seq2seq.recurrent_net import RecurrentNet
 
 
 def get_bleu_of_model(model: nn.Module,
@@ -25,10 +27,30 @@ def get_bleu_of_model(model: nn.Module,
             return torch_bleu(translations, [[ref] for ref in reference_data])
         return bleu(translations, reference_data)
 
-    if do_beam_search:
-        translations = beam_search.translate(model, source_data, source_dict, target_dict, beam_size, window_size)
+    if isinstance(model, FeedforwardNet):
+        if do_beam_search:
+            translations = beam_search.translate_ff(model,
+                                                    source_data,
+                                                    source_dict,
+                                                    target_dict,
+                                                    beam_size,
+                                                    window_size)
+        else:
+            translations = greedy_search.translate_ff(model,
+                                                      source_data,
+                                                      source_dict,
+                                                      target_dict,
+                                                      window_size)
+    elif isinstance(model, RecurrentNet):
+        if do_beam_search:
+            translations = beam_search.translate_rnn(model, source_data, source_dict, target_dict, beam_size)
+        else:
+            translations = greedy_search.translate_rnn(model,
+                                                       source_data,
+                                                       source_dict,
+                                                       target_dict)
     else:
-        translations = greedy_search.translate(model, source_data, source_dict, target_dict, window_size)
+        raise ValueError('Unsupported model')
 
     translation = undo_prepocessing(translations)
 
