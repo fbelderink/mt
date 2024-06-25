@@ -42,14 +42,17 @@ if __name__ == "__main__":
 
     model = torch.load("eval/best_models/rnn/12_02_20.pth", map_location=device)
 
-    translations = test_beam_search(model, data_de_dev, dict_de, dict_en, 3, 0, get_n_best=True)
+    translations = test_beam_search(model, data_de_dev, dict_de, dict_en, 3, 0, get_n_best=False)
 
+    save_data("eval/translations/rnn_translations", translations)
     #translations = load_data("eval/translations/best_translations")
 
     #translations = test_greedy_search(model, data_de_dev, dict_de, dict_en, model.window_size)
 
     #test_get_scores(model, data_de_dev, data_en_dev, dict_de, dict_en, model.window_size)
 
+    test_model_bleu(model, data_de_dev, data_en_dev, dict_de, dict_en, 3, 0,
+                    True, translations, use_torch_bleu=True)
     #test_model_bleu(model, data_de_dev, data_en_dev, dict_de, dict_en,
     #                3,  model.window_size, args.do_beam_search, translations, use_torch_bleu=True)
 
