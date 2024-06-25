@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    model = torch.load("eval/best_models/rnn/22_15_05.pth", map_location=device)
+    model = torch.load("eval/best_models/rnn/12_02_20.pth", map_location=device)
 
     translations = test_beam_search(model, data_de_dev, dict_de, dict_en, 3, 0, get_n_best=True)
 
