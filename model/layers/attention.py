@@ -8,6 +8,7 @@ class Attention(nn.Module):
     Attention layer, implemented as proposed in Bahdanau & Cho
     """
 
+    #TODO use dot product attention
     def __init__(self, encoder_hidden, decoder_hidden):
         super(Attention, self).__init__()
 
@@ -31,6 +32,8 @@ class Attention(nn.Module):
 
         weights = F.softmax(scores, dim=-1)
         # expected shape (B x 1 x seq_len)
+
+        # TODO mask padding
 
         context = torch.bmm(weights, encoder_outputs)  # (B x 1 x encoder_hidden)
 

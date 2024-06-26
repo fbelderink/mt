@@ -53,14 +53,14 @@ class AttentionDecoder(nn.Module):
                               hidden,
                               layers,
                               dropout=dropout,
-                              bidirectional=bidirectional,
+                              bidirectional=bidirectional,  #TODO superflous
                               batch_first=True)
         else:
             self.rnn = nn.LSTM(embed_dim + num_directions * hidden,
                                hidden,
                                layers,
                                dropout=dropout,
-                               bidirectional=bidirectional,
+                               bidirectional=bidirectional,  #TODO superflous
                                batch_first=True)
 
         self.use_attention = use_attention
@@ -104,7 +104,8 @@ class AttentionDecoder(nn.Module):
         # hidden_state shape: (directions * num_layers x B x hidden)
         # target word shape: (B x 1)
         embedded = self.embedding(target_word)
-        embedded = F.relu(embedded)
+
+        #embedded = F.relu(embedded) TODO
         # embedded shape (B x 1 x embed_dim)
 
         if self.use_attention:
