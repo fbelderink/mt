@@ -35,7 +35,6 @@ class AttentionDecoder(nn.Module):
                  hidden,
                  layers,
                  dropout,
-                 bidirectional,
                  use_attention=True):
 
         super(AttentionDecoder, self).__init__()
@@ -44,31 +43,27 @@ class AttentionDecoder(nn.Module):
                                       embed_dim,
                                       padding_idx=PADDING)
 
-        num_directions = 2 if bidirectional else 1
-
         self.rnn_type = rnn_type
 
         if self.rnn_type == RNNType.GRU:
-            self.rnn = nn.GRU(embed_dim + num_directions * hidden,
+            self.rnn = nn.GRU(embed_dim + hidden,
                               hidden,
                               layers,
                               dropout=dropout,
-                              bidirectional=bidirectional,  #TODO superflous
                               batch_first=True)
         else:
-            self.rnn = nn.LSTM(embed_dim + num_directions * hidden,
+            self.rnn = nn.LSTM(embed_dim + hidden,
                                hidden,
                                layers,
                                dropout=dropout,
-                               bidirectional=bidirectional,  #TODO superflous
                                batch_first=True)
 
         self.use_attention = use_attention
 
         if self.use_attention:
-            self.attention = Attention(num_directions * hidden, hidden)
+            self.attention = Attention(hidden, hidden)
 
-        self.fc = nn.Linear(num_directions * hidden, target_dict_size)
+        self.fc = nn.Linear(hidden, target_dict_size)
 
     def forward(self, encoder_outputs, encoder_state, target_tensor,
                 teacher_forcing=False, apply_log_softmax=True):
@@ -104,8 +99,6 @@ class AttentionDecoder(nn.Module):
         # hidden_state shape: (directions * num_layers x B x hidden)
         # target word shape: (B x 1)
         embedded = self.embedding(target_word)
-
-        #embedded = F.relu(embedded) TODO
         # embedded shape (B x 1 x embed_dim)
 
         if self.use_attention:
@@ -125,6 +118,8 @@ class AttentionDecoder(nn.Module):
         # concat shape (B x 1 x (embed_dim + encoder_hidden))
         decoder_outputs, prev_state = self.rnn(concat, prev_state)
         # decoder_outputs shape (B x 1 x lstm_hidden * num_directions)
+
+        # TODO apply attention after rnn layer
 
         fc_out = self.fc(decoder_outputs)
 

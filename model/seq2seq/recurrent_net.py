@@ -38,7 +38,6 @@ class RecurrentNet(BasicNet):
                                         config.rnn_hidden_dim,
                                         config.rnn_layers,
                                         config.decoder_parameters[1],
-                                        config.rnn_bidirectional,
                                         config.use_attention)
 
         self.criterion = nn.CrossEntropyLoss(ignore_index=PADDING)
