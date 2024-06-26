@@ -44,8 +44,7 @@ class RecurrentNet(BasicNet):
 
     def forward(self, source, target,
                 teacher_forcing=False, apply_log_softmax=True):
-        flipped_source = torch.flip(source, dims=[1])
-        encoder_outputs, encoder_state = self.encoder(flipped_source)
+        encoder_outputs, encoder_state = self.encoder(source)
 
         decoder_outputs = self.decoder(encoder_outputs, encoder_state, target,
                                        teacher_forcing=teacher_forcing,
