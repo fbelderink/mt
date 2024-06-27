@@ -12,7 +12,7 @@ def _create_dict(data: List[List[str]],
                  padding: str = None) -> Dictionary:
     print("started creating dictionary")
     ops = generate_bpe(data, num_operations)
-    dictionary = Dictionary(data, ops,padding)
+    dictionary = Dictionary(data, ops, padding=padding)
     print("finished creating dictionary")
     if save_path:
         dictionary.save(save_path)

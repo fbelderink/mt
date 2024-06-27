@@ -76,7 +76,7 @@ class Dictionary:
     def _generate_vocabulary(self,
                              data: List[List[str]],
                              operations: List[List[str]],
-                             transformed_words=None,
+                             transformed_words: dict = None,
                              padding: str = None):
         # save the words with operations applied to them so that the
         # operations don't have to be performed twice for the same word
