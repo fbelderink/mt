@@ -128,7 +128,9 @@ def translate_rnn(model: RecurrentNet,
             top_k_values = [all_top_k_values[i].item() for i in new_indices.indices.flatten().tolist()]
             current_top_k_indices = [idx for idx in new_indices.values.flatten().tolist()]
 
-            beam_indices = [idx % beam_size for idx in new_indices.indices.flatten().tolist()]
+            # proposed fix:
+            beam_indices = [idx // beam_size for idx in new_indices.indices.flatten().tolist()]
+
             top_k_indices = [top_k_indices[beam_index] + [current_top_k_indices[beam_index]]
                              for beam_index in beam_indices]
 
