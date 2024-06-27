@@ -51,26 +51,34 @@ def translate_rnn(model: RecurrentNet,
     model = model.to(device)
     model.eval()
 
+    # vectorization of dictionary functions
     get_source_index = np.vectorize(source_dict.get_index_of_string)
     get_target_index = np.vectorize(target_dict.get_index_of_string)
     get_target_string = np.vectorize(target_dict.get_string_at_index)
 
     source_data = source_dict.apply_vocabulary_to_text(source_data, bpe_performed=False)
 
+    # search for longest sentence
     T_max = len(max(source_data, key=lambda s: len(s)))
+
+    # padd each sentence to the length of the longest sentence, because we do that in training for parallel batch processing
     source_data = [sentence +
                    [END_SYMBOL] +
                    [PADDING_SYMBOL] * (T_max - len(sentence))
                    for sentence in source_data]
 
+    # convert tokens to their respective indices
     source_data = torch.from_numpy(get_source_index(np.array(source_data)))
 
     target_sentences = []
 
     for sentence in source_data:
+        # list to keep track the last token of each beam
         beam_targets = torch.from_numpy(get_target_index([[START_SYMBOL]])).to(device)
 
+        # list to keep track of the overall probability of each beam
         top_k_values = [0] * beam_size
+        #
         top_k_indices = [[target_dict.get_index_of_string(START_SYMBOL)]] * beam_size
 
         # roll out encoder
@@ -88,6 +96,7 @@ def translate_rnn(model: RecurrentNet,
 
         for k in range(T_max + 1):
 
+            # list to temporarily store the top k choices of each beam
             all_top_k_indices = []
             all_top_k_values = []
             new_states = []
@@ -98,7 +107,9 @@ def translate_rnn(model: RecurrentNet,
                 target = target.unsqueeze(0)
 
                 # do one step on the last token of the beam
-                pred, state = model.get_decoder().forward_step(encoder_outputs, states[beam_idx], target)
+                pred, state = model.get_decoder().forward_step(encoder_outputs,
+                                                               states[beam_idx],
+                                                               target)
                 new_states.append(state)
                 # add previous top k values along beam size dim
                 pred += top_k_values[beam_idx]
@@ -113,6 +124,7 @@ def translate_rnn(model: RecurrentNet,
 
             new_indices = torch.stack(all_top_k_indices).topk(beam_size, dim=-1)
 
+            # saving the top k values in a list
             top_k_values = [all_top_k_values[i].item() for i in new_indices.indices.flatten().tolist()]
             current_top_k_indices = [idx for idx in new_indices.values.flatten().tolist()]
 
