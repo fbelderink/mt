@@ -102,7 +102,8 @@ def translate_rnn(model: RecurrentNet,
                 new_states.append(state)
                 # add previous top k values along beam size dim
                 pred += top_k_values[beam_idx]
-                # TODO längennormalisierung der predicitions
+                # längennormalisierung der predicitions
+                pred /= k + 1
 
                 # get top k predictions
                 top_k = pred.topk(beam_size, dim=-1)
