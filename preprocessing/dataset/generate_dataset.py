@@ -8,10 +8,11 @@ from dataset import RNNTranslationDataset, FFTranslationDataset
 
 def _create_dict(data: List[List[str]],
                  num_operations,
-                 save_path) -> Dictionary:
+                 save_path,
+                 padding: str = None) -> Dictionary:
     print("started creating dictionary")
     ops = generate_bpe(data, num_operations)
-    dictionary = Dictionary(data, ops)
+    dictionary = Dictionary(data, ops,padding)
     print("finished creating dictionary")
     if save_path:
         dictionary.save(save_path)
@@ -28,10 +29,10 @@ def _generate_dataset_rnn(source_data: List[List[str]],
                           dict_en_save_path=None,
                           save_path=None) -> (RNNTranslationDataset, Dictionary, Dictionary):
     if not dict_de:
-        dict_de = _create_dict(source_data, num_operations, dict_de_save_path)
+        dict_de = _create_dict(source_data, num_operations, dict_de_save_path, padding = "True")
 
     if not dict_en:
-        dict_en = _create_dict(target_data, num_operations, dict_en_save_path)
+        dict_en = _create_dict(target_data, num_operations, dict_en_save_path, padding = "True")
 
     dataset = RNNTranslationDataset(source_data, target_data, dict_de, dict_en)
 

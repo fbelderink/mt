@@ -18,14 +18,16 @@ class Dictionary:
     def __init__(self,
                  data: List[List[str]],
                  operations: List[List[str]],
-                 transformed_words=None):
+                 transformed_words=None,
+                 padding: str = None):
         self._word_to_idx_vocab = dict()
         self._idx_to_word_vocab = dict()
         self._operations = operations
 
         self._generate_vocabulary(data,
                                   operations,
-                                  transformed_words=transformed_words)
+                                  transformed_words=transformed_words,
+                                  padding=padding)
 
     def __str__(self):
         # Return a string representation of the dictionary's contents
