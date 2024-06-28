@@ -3,7 +3,7 @@ from utils.file_manipulation import load_data, save_checkpoint
 from typing import List
 from preprocessing.BPE import generate_bpe
 from preprocessing.dictionary import Dictionary
-from dataset import RNNTranslationDataset, FFTranslationDataset
+from preprocessing.dataset.dataset import RNNTranslationDataset, FFTranslationDataset
 
 
 def _create_dict(data: List[List[str]],
