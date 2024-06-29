@@ -8,7 +8,7 @@ class Attention(nn.Module):
     Attention layer, implemented as proposed in Bahdanau & Cho
     """
 
-    #TODO use dot product attention
+
     def __init__(self, encoder_hidden, decoder_hidden, use_dot_product = False   ):
         super(Attention, self).__init__()
         self.enc_dim = encoder_hidden
@@ -33,8 +33,14 @@ class Attention(nn.Module):
     #implement scaled dot product
     def forward(self, encoder_outputs, decoder_hidden):
         if self.use_dot_product:
+            #use pytorch sdpa
+            #didnt specify scale here
+            weights = torch.nn.functional.scaled_dot_product_attention(decoder_hidden, encoder_outputs, encoder_outputs)
+            context = torch.bmm(weights, encoder_outputs)
+            return context
 
-            query = self.Q(decoder_hidden)
+
+            '''query = self.Q(decoder_hidden)
             keys = self.K(encoder_outputs)
             values = self.V(encoder_outputs)
             #QK^T
@@ -45,7 +51,7 @@ class Attention(nn.Module):
             weights = F.softmax(qk_product, dim=1)
 
             context_vector = torch.bmm(weights, values)
-            return context_vector
+            return context_vector'''
 
 
         else:
