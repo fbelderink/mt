@@ -4,9 +4,9 @@ batch_size: 16
 shuffle: True
 num_workers: 2
 max_epochs: 20
-print_eval_every: 20
-test_model_every: 0
-checkpoints_per_epoch: 0.001
+print_eval_every: 400
+test_model_every: 400
+checkpoints_per_epoch: 1
 load_model_path: ""
 early_stopping: False
 half_lr: True
