@@ -29,8 +29,8 @@ class RecurrentNet(BasicNet):
                                config.encoder_parameters[0],
                                config.rnn_hidden_dim,
                                config.rnn_layers,
-                               config.encoder_parameters[1],
-                               config.rnn_bidirectional)
+                               config.encoder_parameters[2],
+                               config.encoder_parameters[1])
 
         self.decoder = AttentionDecoder(rnn_type,
                                         target_dict_size,
@@ -38,8 +38,9 @@ class RecurrentNet(BasicNet):
                                         config.rnn_hidden_dim,
                                         config.rnn_layers,
                                         config.decoder_parameters[1],
-                                        config.rnn_bidirectional,
-                                        config.use_attention)
+                                        config.use_attention,
+                                        use_attention_dp=config.use_attention_dp,
+                                        bidirectional_encoder=config.encoder_parameters[1])
 
         self.criterion = nn.CrossEntropyLoss(ignore_index=PADDING)
 
@@ -50,16 +51,11 @@ class RecurrentNet(BasicNet):
         # encoder_outputs shape: [B x seq_len x directions*hidden]
         # encoder_state shapes: [directions*layers x B x hidden]
         # (includes cell state and hidden state)
-        # i.e. the two directs are already concationated 
-
-         
+        # i.e. the two directions are already concatenated
 
         decoder_outputs = self.decoder(encoder_outputs, encoder_state, target,
                                        teacher_forcing=teacher_forcing,
                                        apply_log_softmax=apply_log_softmax)
-
-        
-        
 
         decoder_outputs = decoder_outputs.permute(0, 2, 1)
 

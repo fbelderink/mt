@@ -29,5 +29,5 @@ class RNNModelHyperparameters(ModelHyperparameters):
         self.rnn_type = config["rnn_type"]
         self.rnn_layers = config["rnn_layers"]
         self.rnn_hidden_dim = config["rnn_hidden_dim"]
-        self.rnn_bidirectional = config["rnn_bidirectional"]
         self.use_attention = config["use_attention"]
+        self.use_attention_dp = config["use_attention_dp"]
