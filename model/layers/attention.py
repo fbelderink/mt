@@ -8,18 +8,16 @@ class Attention(nn.Module):
     Attention layer, implemented as proposed in Bahdanau & Cho
     """
 
-
-    def __init__(self, encoder_hidden, decoder_hidden, use_dot_product = False   ):
+    def __init__(self, encoder_hidden, decoder_hidden, use_dot_product=False):
         super(Attention, self).__init__()
-        self.enc_dim = encoder_hidden
         self.use_dot_product = use_dot_product
         if self.use_dot_product:
-            #Query Matrix for the "Query" from our decoder
-            #Keys Matrix for encoder outputs
-            # Values matrix for the actual context of our encoder
+            # query matrix for the "query" from our decoder
+            # keys matrix for encoder outputs
+            # values matrix for the actual context of our encoder
             self.Q = nn.Linear(decoder_hidden, encoder_hidden)
-            #choice of our dimensions might be abritrarily
-            self.K = nn.Linear(encoder_hidden ,encoder_hidden)
+            # choice of our dimensions might be abritrarily
+            self.K = nn.Linear(encoder_hidden, encoder_hidden)
 
             self.V = nn.Linear(encoder_hidden, encoder_hidden)
         else:
@@ -30,15 +28,16 @@ class Attention(nn.Module):
 
             self.Va = nn.Linear(encoder_hidden, 1)
 
-    #implement scaled dot product
-    def forward(self, encoder_outputs, decoder_hidden):
-        if self.use_dot_product:
-            #use pytorch sdpa
-            #didnt specify scale here
-            weights = torch.nn.functional.scaled_dot_product_attention(decoder_hidden, encoder_outputs, encoder_outputs)
-            context = torch.bmm(weights, encoder_outputs)
-            return context
+    def forward(self, encoder_outputs, decoder_outputs):
+        # encoder_outputs expected shape: (B x seq_len x hidden)
+        # decoder_outputs expected shape: (B x 1 x hidden)
 
+        if self.use_dot_product:
+            # use pytorch sdpa
+            # didnt specify scale here
+            context = F.scaled_dot_product_attention(decoder_outputs, encoder_outputs, encoder_outputs)
+
+            return context
 
             '''query = self.Q(decoder_hidden)
             keys = self.K(encoder_outputs)
@@ -52,14 +51,8 @@ class Attention(nn.Module):
 
             context_vector = torch.bmm(weights, values)
             return context_vector'''
-
-
         else:
-
-
-            # encoder_outputs shape (B x L x encoder_hidden)
-            # decoder_hidden shape (B x 1 x decoder_hidden)
-            Wa = self.Wa(decoder_hidden)
+            Wa = self.Wa(decoder_outputs)
             # expected shape (B x 1 x encoder_hidden)
             Ua = self.Ua(encoder_outputs)
             # expected shape (B x L x encoder_hidden)
