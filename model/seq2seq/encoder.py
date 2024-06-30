@@ -37,8 +37,6 @@ class Encoder(nn.Module):
     def forward(self, source_sentence):
         embedded = self.embedding(source_sentence)
 
-        embedded = F.relu(embedded)
-
         outputs, encoder_state = self.rnn(embedded)
 
         return outputs, encoder_state

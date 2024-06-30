@@ -1,8 +1,10 @@
 import random
 
+from preprocessing.BPE import generate_bpe
+from model.seq2seq.recurrent_net import RecurrentNet
 from postprocessing.postprocessing import undo_prepocessing
-from utils.hyperparameters import FFHyperparameters
-from utils.hyperparameters.ConfigLoader import ConfigLoader
+from utils.model_hyperparameters import FFModelHyperparameters, RNNModelHyperparameters
+from utils.ConfigLoader import ConfigLoader
 from training.train import train
 import glob
 from utils.file_manipulation import *
@@ -10,7 +12,7 @@ from metrics.calculate_bleu_of_model import get_bleu_of_model
 from search import beam_search
 from scoring import score
 from preprocessing.dictionary import Dictionary
-from preprocessing.dataset import TranslationDataset
+from preprocessing.dataset.dataset import TranslationDataset
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 
@@ -29,7 +31,7 @@ def execute_runs():
     for name, seed in zip(["A", "B", "C"], getseeds()):
         train("data/train7k_w3.pt",
               "data/val7k_w3.pt",
-              FFHyperparameters(ConfigLoader("configs/best_config.yaml").get_config()),
+              FFModelHyperparameters(ConfigLoader("configs/best_config.yaml").get_config()),
               max_epochs=5,
               shuffle=True,
               num_workers=4,
@@ -170,8 +172,7 @@ def eval_scores(model: nn.Module,
                                              source_data,
                                              source_dict,
                                              target_dict,
-                                             beam_size,
-                                             model.window_size)
+                                             beam_size)
         translations = undo_prepocessing(translations)  # get_scores expects no bpe applied data
 
     reference_score = score.get_scores(model,
@@ -189,3 +190,23 @@ def eval_scores(model: nn.Module,
                                  model.window_size)
 
     return sum(our_score) / len(our_score), sum(reference_score) / len(reference_score)
+
+
+if __name__ == "__main__":
+    source_data = load_data('./data/raw/multi30k.dev.de')
+    target_data = load_data('./data/raw/multi30k.dev.en')
+
+    ops_source = generate_bpe(source_data, 7000)
+
+    ops_target = generate_bpe(target_data, 7000)
+
+    source_dict = Dictionary(source_data, ops_source)
+    target_dict = Dictionary(target_data, ops_target)
+
+    config = ConfigLoader("./configs/rnn/config.yaml").get_config()
+    hyperparameters = RNNModelHyperparameters(config)
+    model = RecurrentNet(len(source_dict),
+                         len(target_dict),
+                         hyperparameters)
+
+    a, b = eval_scores(model, source_data, target_data, source_dict, target_dict)

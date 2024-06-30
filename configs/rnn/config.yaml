@@ -1,11 +1,12 @@
 encoder_parameters:
   embed_dim: 150
+  bidirectional: True
   dropout_rate: 0.0
 decoder_parameters:
   embed_dim: 150
   dropout_rate: 0.0
 rnn_type: 'lstm'
-rnn_layers: 1
 rnn_hidden_dim: 200
-rnn_bidirectional: True
+rnn_layers: 1
 use_attention: True
+use_attention_dp: True

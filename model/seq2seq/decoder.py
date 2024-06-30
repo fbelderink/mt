@@ -5,27 +5,6 @@ from model.layers.attention import Attention
 from utils.types import RNNType
 from preprocessing.dictionary import START, PADDING
 
-"""
-class Decoder(nn.Module):
-    def __init__(self, target_dict_size, embed_dim):
-        self.embedding = nn.Embedding(target_dict_size,
-                                      embed_dim,
-                                      padding_idx=PADDING)
-
-        self.gru = nn.GRU(embed_dim, embed_dim, batch_first=True)
-
-    def forward(self, encoder_output, hidden, target):
-
-
-
-        for i in range(target.size(1) - 1):
-            pass
-
-    def step_forward(self, encoder_output, prev_state, target_tensor):
-        pass
-
-"""
-
 
 class AttentionDecoder(nn.Module):
     def __init__(self,
@@ -35,52 +14,66 @@ class AttentionDecoder(nn.Module):
                  hidden,
                  layers,
                  dropout,
-                 bidirectional,
-                 use_attention=True):
-
+                 use_attention=True,
+                 use_attention_dp=True,
+                 bidirectional_encoder=False):
         super(AttentionDecoder, self).__init__()
 
         self.embedding = nn.Embedding(target_dict_size,
                                       embed_dim,
                                       padding_idx=PADDING)
 
-        num_directions = 2 if bidirectional else 1
+        self.layers = layers
 
         self.rnn_type = rnn_type
 
+        self.bidirectional_encoder = bidirectional_encoder
+
+        self.num_directions = 2 if self.bidirectional_encoder else 1
+
         if self.rnn_type == RNNType.GRU:
-            self.rnn = nn.GRU(embed_dim + num_directions * hidden,
-                              hidden,
+            self.rnn = nn.GRU(embed_dim,
+                              self.num_directions * hidden,
                               layers,
                               dropout=dropout,
-                              bidirectional=bidirectional,
                               batch_first=True)
         else:
-            self.rnn = nn.LSTM(embed_dim + num_directions * hidden,
-                               hidden,
+            self.rnn = nn.LSTM(embed_dim,
+                               self.num_directions * hidden,
                                layers,
                                dropout=dropout,
-                               bidirectional=bidirectional,
                                batch_first=True)
 
         self.use_attention = use_attention
 
         if self.use_attention:
-            self.attention = Attention(num_directions * hidden, hidden)
+            self.attention = Attention(self.num_directions * hidden,
+                                       self.num_directions * hidden,
+                                       use_dot_product=use_attention_dp)
+            # attention output shape (B x 1 x encoder_hidden)
 
-        self.fc = nn.Linear(num_directions * hidden, target_dict_size)
+        self.fc = nn.Linear(2 * self.num_directions * hidden, target_dict_size)
+
+    # add the encoder state of each direction together in order to fit them into the
+    # uni-directional decoder
+    def reshape_state(self, encoder_state_entry):
+        _, B, hidden = encoder_state_entry.shape
+        reshaped = encoder_state_entry.view(self.layers, B, hidden * self.num_directions)
+
+        return reshaped
 
     def forward(self, encoder_outputs, encoder_state, target_tensor,
                 teacher_forcing=False, apply_log_softmax=True):
+        # encoder_outputs expected shape: (B x seq_len x hidden)
+        # encoder_state expected shapes: ([directions * layers x B x hidden], [directions * layers x B x hidden])
 
         prob_dists = []
         # expected target_tensor shape: (B x seq_len)
         target_word = target_tensor[:, 1].unsqueeze(1)
 
-        prev_decoder_state = encoder_state
+        prev_decoder_state = (self.reshape_state(encoder_state[0]), self.reshape_state(encoder_state[1]))
 
         for k in range(1, target_tensor.size(1)):
-
             fc_out, prev_decoder_state = self.forward_step(encoder_outputs,
                                                            prev_decoder_state,
                                                            target_word,
@@ -95,33 +88,29 @@ class AttentionDecoder(nn.Module):
             prob_dists.append(fc_out)
         return torch.cat(prob_dists, dim=1)
 
-    def forward_step(self, encoder_outputs, prev_state, target_word, apply_log_softmax=True):
+    def forward_step(self,
+                     encoder_outputs,
+                     prev_state,
+                     target_word,
+                     apply_log_softmax=True):
         # encoder_outputs shape: (B x seq_len x hidden * directions)
         # hidden_state shape: (directions * num_layers x B x hidden)
         # target word shape: (B x 1)
+
         embedded = self.embedding(target_word)
-        embedded = F.relu(embedded)
         # embedded shape (B x 1 x embed_dim)
+        decoder_outputs, prev_state = self.rnn(embedded, prev_state)
+        # decoder_outputs shape (B x 1 x hidden * num_directions)
 
         if self.use_attention:
-            if self.rnn_type == RNNType.GRU:
-                prev_hidden_state = prev_state
-            else:
-                (prev_hidden_state, _) = prev_state
-
-            last_hidden_state = prev_hidden_state.permute(1, 0, 2)[:, -1, :].unsqueeze(1)
-            # last_hidden_state shape (B x 1 x lstm_hidden)
-            context_vector = self.attention(encoder_outputs, last_hidden_state)
+            context_vector = self.attention(encoder_outputs, decoder_outputs)
             # context_vector shape (B x 1 x encoder_hidden)
         else:
-            context_vector = encoder_outputs[:, -1, :].unsqueeze(1)
+            context_vector = encoder_outputs[:, -1, :].unsqueeze(1) #TODO sinnfrei (müssen 1:1 alignment sonst machen eigentlich)
 
-        concat = torch.cat((embedded, context_vector), dim=-1)
-        # concat shape (B x 1 x (embed_dim + encoder_hidden))
-        decoder_outputs, prev_state = self.rnn(concat, prev_state)
-        # decoder_outputs shape (B x 1 x lstm_hidden * num_directions)
-
-        fc_out = self.fc(decoder_outputs)
+        concat = torch.cat((decoder_outputs, context_vector), dim=-1)
+        # concat shape (B x 1 x (decoder_hidden + encoder_hidden))
+        fc_out = self.fc(concat)
 
         if not self.training and apply_log_softmax:
             fc_out = F.log_softmax(fc_out, dim=-1)

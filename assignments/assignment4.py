@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
-from search.beam_search import translate
-from search.greedy_search import translate as greedy_translate
+from search.beam_search import translate_rnn, translate_ff
+from model.seq2seq.recurrent_net import RecurrentNet
+from search.greedy_search import translate_ff as greedy_translate_ff
 from typing import List
 from preprocessing.dictionary import Dictionary
 from utils.file_manipulation import save_data, save_n_best_translations
@@ -19,14 +20,13 @@ def test_beam_search(model: nn.Module,
                      beam_size: int,
                      window_size: int,
                      get_n_best=True):
-
-    target_sentences = translate(model,
-                                 source_data,
-                                 source_dict,
-                                 target_dict,
-                                 beam_size,
-                                 window_size,
-                                 get_n_best)
+    #if isinstance(model, RecurrentNet):
+    target_sentences = translate_rnn(model,
+                                     source_data,
+                                     source_dict,
+                                     target_dict,
+                                     beam_size,
+                                     get_n_best)
 
     if get_n_best:
         post_processed_sentences = []
@@ -43,6 +43,7 @@ def test_beam_search(model: nn.Module,
     return post_processed_sentences
 
 
+"""
 def test_greedy_search(model: nn.Module,
                        source_data: List[List[str]],
                        source_dict: Dictionary,
@@ -60,6 +61,7 @@ def test_greedy_search(model: nn.Module,
     save_data("eval/translations/greedy_translations", post_processed_sentences)
 
     return post_processed_sentences
+"""
 
 
 def test_get_scores(model: nn.Module,
@@ -89,7 +91,6 @@ def test_model_bleu(model: nn.Module,
                     do_beam_search,
                     translations: List[List[str]],
                     use_torch_bleu=False):
-
     bleu_score = get_bleu_of_model(model,
                                    source_data,
                                    reference_data,
@@ -110,7 +111,6 @@ def determine_models_bleu(models_path: str,
                           target_dict: Dictionary,
                           beam_size: int, window_size: int,
                           do_beam_search):
-
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     directory = os.fsencode(models_path)
 
