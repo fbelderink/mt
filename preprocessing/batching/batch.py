@@ -1,6 +1,6 @@
 from typing import List
 from preprocessing.dictionary import Dictionary
-from preprocessing.fragment import fragment_data
+from preprocessing.batching.fragment import fragment_data
 import numpy as np
 
 

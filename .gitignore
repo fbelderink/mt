@@ -3,9 +3,11 @@
 env/
 TODO.txt
 .vscode/
-eval/
+eval/bpe
+eval/translations
+eval/**/*.pth
 __pycache__/
-data/
 priv_test.py
 SPPvenv/
 runs/
+data/

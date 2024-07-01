@@ -1,0 +1,2 @@
+Average Score for our translation: 0.6284227696397179
+Average Score for the reference translation 0.2389342747894817

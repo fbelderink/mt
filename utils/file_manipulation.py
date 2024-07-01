@@ -4,6 +4,7 @@ import torch.nn as nn
 from datetime import datetime
 from pathlib import Path
 import os
+import shutil
 
 
 def load_data(path: str,
@@ -50,6 +51,16 @@ def save_batches(path: str, batches: List[tuple]):
     out_file.close()
 
 
+def save_n_best_translations(path: str, translations: List[List[List[str]]]):
+    out_file = open(path, 'w', encoding='utf-8')
+    for sentences in translations:
+        str_sentences = [" ".join(sentence) for sentence in sentences]
+        line = ";".join(str_sentences)
+        out_file.write(line + '\n')
+
+    out_file.close()
+
+
 def save_model(path: str, model: nn.Module):
     torch.save(model.state_dict(), path)
 
@@ -59,9 +70,10 @@ def load_model(path: str, model: nn.Module) -> nn.Module:
     return model
 
 
-def save_checkpoint(model: nn.Module):
-    date = datetime.today().strftime('%d-%m-%Y')
+def save_checkpoint(model: nn.Module, model_name):
+    date = datetime.today().strftime('%Y-%m-%d')
     time = datetime.today().strftime('%H_%M_%S')
+    print("\n saving checkpoint at " + f"eval/checkpoints/{date}-{model_name}/{time}.pth" + "\n")
+    Path(f"eval/checkpoints/{date}-{model_name}").mkdir(exist_ok=True)
+    torch.save(model, f"eval/checkpoints/{date}-{model_name}/{time}.pth")
 
-    Path(f"eval/checkpoints/{date}").mkdir(exist_ok=True)
-    torch.save(model.state_dict(), f"eval/checkpoints/{date}/{time}.pth")
