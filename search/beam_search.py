@@ -86,9 +86,8 @@ def translate_rnn(model: RecurrentNet,
         # roll out encoder
         encoder_outputs, state = model.get_encoder().forward(sentence)
 
-        # TODO: once decoder is unidirectional, both encoder states have to be concatenated
         # add batch dimensions
-        state = (state[0].unsqueeze(1), state[1].unsqueeze(1))
+        state = (state[0].reshape((1, 400)).unsqueeze(1), state[1].reshape((1, 400)).unsqueeze(1))
 
         # add batch dimension
         encoder_outputs = encoder_outputs.unsqueeze(0)
@@ -126,7 +125,7 @@ def translate_rnn(model: RecurrentNet,
                 # normalization of the probabilities wrt the length of the sequence
                 pred /= k + 1
 
-                preds.append(pred)
+                preds.append(pred.squeeze(0).squeeze(0))
                 # get top k predictions
                 # top_k = pred.topk(beam_size, dim=-1)
 
@@ -136,9 +135,9 @@ def translate_rnn(model: RecurrentNet,
             # new_topk = torch.stack(all_top_k_values).topk(beam_size, dim=-1)
             top_k = torch.stack(preds).topk(beam_size, dim=-1)
 
-            new_indices = top_k.indices.tolist()
+            new_indices = top_k.indices.tolist()[0]  # always a single element list, basically flattening, otherwise [[...]]
 
-            if True in [i % target_dict_size == 0 for i in new_indices]:
+            if True in [i % target_dict_size == 0 for i in new_indices]:  # checking if eos is in top k
                 beam_indices = [i // target_dict_size for i in new_indices if i % target_dict_size == 0]
 
                 beam_dict = {i: v for (i, v) in zip(beam_indices, top_k.values)}
@@ -157,7 +156,7 @@ def translate_rnn(model: RecurrentNet,
                 new_indices = top_k.indices.tolist()
 
             # saving the top k values in a list
-            top_k_probs = top_k.values.tolist()
+            top_k_probs = top_k.values.tolist()[0]  # same mechanism as with 'new_indices' above
 
             # find the corresponding beams
             beam_indices = [idx // target_dict_size for idx in new_indices]
