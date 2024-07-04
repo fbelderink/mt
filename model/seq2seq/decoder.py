@@ -1,4 +1,5 @@
-import torchimport random
+import torch
+import random
 import torch.nn as nn
 import torch.nn.functional as F
 from model.layers.attention import Attention
