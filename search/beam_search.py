@@ -3,7 +3,7 @@ import numpy as np
 import torch.nn as nn
 from model.seq2seq.recurrent_net import RecurrentNet
 from model.ff.feedforward_net import FeedforwardNet
-from preprocessing.dictionary import Dictionary, START_SYMBOL, END_SYMBOL, PADDING_SYMBOL
+from preprocessing.dictionary import Dictionary, START_SYMBOL, END_SYMBOL, PADDING_SYMBOL, END
 from preprocessing.batching.fragment import create_source_window_matrix
 from typing import List
 
@@ -13,10 +13,9 @@ def translate(model: nn.Module,
               source_dict: Dictionary,
               target_dict: Dictionary,
               beam_size: int,
-              window_size: int=3,
+              window_size: int = 3,
               get_n_best=False,
               alignment_factor=1):
-
     if isinstance(model, RecurrentNet):
         assert beam_size is not None, "Beam size must be specified for beam search"
         return translate_rnn(model,
@@ -51,6 +50,9 @@ def translate_rnn(model: RecurrentNet,
     model = model.to(device)
     model.eval()
 
+    encoder = model.get_encoder()
+    decoder = model.get_decoder()
+
     # vectorization of dictionary functions
     get_source_index = np.vectorize(source_dict.get_index_of_string)
     get_target_index = np.vectorize(target_dict.get_index_of_string)
@@ -84,10 +86,10 @@ def translate_rnn(model: RecurrentNet,
         full_beams = [[target_dict.get_index_of_string(START_SYMBOL)]] * beam_size
 
         # roll out encoder
-        encoder_outputs, state = model.get_encoder().forward(sentence)
+        encoder_outputs, state = encoder.forward(sentence)
 
         # add batch dimensions
-        state = (state[0].reshape((1, 400)).unsqueeze(1), state[1].reshape((1, 400)).unsqueeze(1))
+        state = (decoder.reshape_state(state[0].unsqueeze(1)), decoder.reshape_state(state[1].unsqueeze(1)))
 
         # add batch dimension
         encoder_outputs = encoder_outputs.unsqueeze(0)
@@ -114,16 +116,16 @@ def translate_rnn(model: RecurrentNet,
                 target = target.unsqueeze(0)
 
                 # do one step on the last token of the beam
-                pred, state = model.get_decoder().forward_step(encoder_outputs,
-                                                               states[beam_idx],
-                                                               target)
+                pred, state = decoder.forward_step(encoder_outputs,
+                                                   states[beam_idx],
+                                                   target)
                 new_states.append(state)
 
                 # add previous top k values along beam size dim
                 pred += top_k_probs[beam_idx]
 
                 # normalization of the probabilities wrt the length of the sequence
-                pred /= k + 1
+                pred /= k + 1 # TODO nicht in jedem schritt normieren, entweder pred unnomiert speichern und dann beim letzten top_k normieren oder irgenwie anders überlegen
 
                 preds.append(pred.squeeze(0).squeeze(0))
                 # get top k predictions
@@ -135,20 +137,23 @@ def translate_rnn(model: RecurrentNet,
             # new_topk = torch.stack(all_top_k_values).topk(beam_size, dim=-1)
             top_k = torch.stack(preds).topk(beam_size, dim=-1)
 
-            new_indices = top_k.indices.tolist()[0]  # always a single element list, basically flattening, otherwise [[...]]
+            new_indices = top_k.indices.tolist()[
+                0]  # always a single element list, basically flattening, otherwise [[...]]
 
-            if True in [i % target_dict_size == 0 for i in new_indices]:  # checking if eos is in top k
-                beam_indices = [i // target_dict_size for i in new_indices if i % target_dict_size == 0]
+            if True in [i % target_dict_size == END for i in new_indices]:  # checking if eos is in top k
+                beam_indices = [i // target_dict_size for i in new_indices if i % target_dict_size == END]
 
                 beam_dict = {i: v for (i, v) in zip(beam_indices, top_k.values)}
 
                 for idx in beam_indices:
-                    finished_beams_indices.append(full_beams[idx] + [2])  # add eos
-                    finished_beams_values.append(top_k_probs[idx] + top_k.values[beam_dict[idx * target_dict_size]].item())
+                    finished_beams_indices.append(full_beams[idx] + [END])  # add eos
+                    finished_beams_values.append(
+                        top_k_probs[idx] + top_k.values[beam_dict[idx * target_dict_size]].item())
 
                 # calculate the new beams that are not finished
                 for pred in preds:
-                    pred[0][target_dict.get_index_of_string(END_SYMBOL)] = -float('inf')  # set probability of eos to -inf
+                    pred[0][target_dict.get_index_of_string(END_SYMBOL)] = -float(
+                        'inf')  # set probability of eos to -inf
 
                 # calculate the top k without eos
                 top_k = torch.stack(preds).topk(beam_size, dim=-1)
@@ -163,9 +168,10 @@ def translate_rnn(model: RecurrentNet,
 
             # append the predicted tokens to the beams
             full_beams = [full_beams[beam_index] + [idx % target_dict_size]
-                             for (beam_index, idx) in zip(beam_indices, new_indices)]
+                          for (beam_index, idx) in zip(beam_indices, new_indices)]
 
-            last_beam_tokens = torch.from_numpy(np.array([indices[-1] for indices in full_beams])).to(device).unsqueeze(1)
+            last_beam_tokens = torch.from_numpy(np.array([indices[-1] for indices in full_beams])).to(device).unsqueeze(
+                1)
             if k == 0:
                 states = new_states * beam_size
             else:
