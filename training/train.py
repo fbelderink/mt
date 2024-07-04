@@ -177,9 +177,9 @@ def test_on_validation_data(model, validation_dataloader, train_params):
 def forward_pass(model, source, target, label, train_params):
     if isinstance(train_params, RNNTrainHyperparameters):
         predictions = model(source, target,
-                            teacher_forcing_ratio=train_params.teacher_forcing_ratio)
+                            teacher_forcing_ratio=train_params.teacher_forcing_ratio, apply_log_softmax=False)
     elif isinstance(train_params, FFTrainHyperparameters):
-        predictions = model(source, target)
+        predictions = model(source, target, apply_log_softmax=False)
         predictions = predictions.unsqueeze(-1)
     else:
         raise ValueError('Invalid train hyperparameters')
