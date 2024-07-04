@@ -10,6 +10,6 @@ checkpoints_per_epoch: 1
 load_model_path: ""
 early_stopping: False
 half_lr: True
-teacher_forcing: False
+teacher_forcing_ratio: 0.7
 two_optimizers: True
 ignore_eos_for_acc: True
