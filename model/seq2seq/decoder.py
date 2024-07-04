@@ -1,4 +1,4 @@
-import torch
+import torchimport random
 import torch.nn as nn
 import torch.nn.functional as F
 from model.layers.attention import Attention
@@ -63,7 +63,7 @@ class AttentionDecoder(nn.Module):
         return reshaped
 
     def forward(self, encoder_outputs, encoder_state, target_tensor,
-                teacher_forcing=False, apply_log_softmax=True):
+                teacher_forcing_ratio=0, apply_log_softmax=True):
         # encoder_outputs expected shape: (B x seq_len x hidden)
         # encoder_state expected shapes: ([directions * layers x B x hidden], [directions * layers x B x hidden])
 
@@ -80,7 +80,7 @@ class AttentionDecoder(nn.Module):
                                                            apply_log_softmax)
             # fc_out shape (B x 1 x target_dict_size)
 
-            if teacher_forcing:
+            if random.random() < teacher_forcing_ratio:
                 target_word = target_tensor[:, k].unsqueeze(1)
             else:
                 target_word = torch.argmax(fc_out, dim=-1)
