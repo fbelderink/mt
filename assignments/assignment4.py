@@ -20,7 +20,6 @@ def test_beam_search(model: nn.Module,
                      beam_size: int,
                      window_size: int,
                      get_n_best=True):
-    #if isinstance(model, RecurrentNet):
     target_sentences = translate_rnn(model,
                                      source_data,
                                      source_dict,
@@ -87,7 +86,6 @@ def test_model_bleu(model: nn.Module,
                     source_dict: Dictionary,
                     target_dict: Dictionary,
                     beam_size: int,
-                    window_size: int,
                     do_beam_search,
                     translations: List[List[str]],
                     use_torch_bleu=False):
@@ -97,7 +95,6 @@ def test_model_bleu(model: nn.Module,
                                    source_dict,
                                    target_dict,
                                    beam_size,
-                                   window_size,
                                    do_beam_search,
                                    translations,
                                    use_torch_bleu=use_torch_bleu)
@@ -109,7 +106,7 @@ def determine_models_bleu(models_path: str,
                           reference_data: List[List[str]],
                           source_dict: Dictionary,
                           target_dict: Dictionary,
-                          beam_size: int, window_size: int,
+                          beam_size: int,
                           do_beam_search):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     directory = os.fsencode(models_path)
@@ -129,7 +126,6 @@ def determine_models_bleu(models_path: str,
                                            source_dict,
                                            target_dict,
                                            beam_size,
-                                           window_size,
                                            do_beam_search,
                                            None)
 
