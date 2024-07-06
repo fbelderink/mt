@@ -35,12 +35,6 @@ def execute_runs():
         train("data/train7k_w3.pt",
               "data/val7k_w3.pt",
               FFModelHyperparameters(ConfigLoader("configs/best_config.yaml").get_config()),
-              max_epochs=5,
-              shuffle=True,
-              num_workers=4,
-              val_rate=0,
-              train_eval_rate=10,
-              random_seed=seed,
               model_name=name)
 
 

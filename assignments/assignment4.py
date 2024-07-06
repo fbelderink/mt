@@ -20,7 +20,6 @@ def test_beam_search(model: nn.Module,
                      beam_size: int,
                      window_size: int,
                      get_n_best=True):
-    #if isinstance(model, RecurrentNet):
     target_sentences = translate_rnn(model,
                                      source_data,
                                      source_dict,

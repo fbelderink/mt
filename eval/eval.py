@@ -5,6 +5,55 @@ from metrics.calculate_bleu_of_model import get_bleu_of_model
 from search import beam_search
 from scoring import score
 from preprocessing.dictionary import Dictionary
+from model.basic_net import BasicNet
+from model.seq2seq.recurrent_net import RecurrentNet
+from model.ff.feedforward_net import FeedforwardNet
+from postprocessing.postprocessing import undo_prepocessing
+from search.beam_search import translate_rnn, translate_ff
+from torchtext.data.metrics import bleu_score as torch_bleu
+
+
+def translate(model_path: str,
+              source_data: List[List[str]],
+              source_dict: Dictionary,
+              target_dict: Dictionary,
+              beam_size: int,
+              get_n_best=False):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = torch.load(model_path, map_location=device)
+
+    if isinstance(model, RecurrentNet):
+        target_sentences = translate_rnn(model,
+                                         source_data,
+                                         source_dict,
+                                         target_dict,
+                                         beam_size,
+                                         get_n_best=get_n_best)
+    elif isinstance(model, FeedforwardNet):
+        target_sentences = translate_ff(model,
+                                        source_data,
+                                        source_dict,
+                                        target_dict,
+                                        beam_size,
+                                        window_size=model.window_size,
+                                        get_n_best=get_n_best)
+    else:
+        raise ValueError("unsupported model type")
+
+    if get_n_best:
+        post_processed_sentences = []
+        for sentences in target_sentences:
+            post_processed_sentences.append(undo_prepocessing(sentences))
+    else:
+        post_processed_sentences = undo_prepocessing(target_sentences)
+
+    if get_n_best:
+        save_n_best_translations(f"eval/translations/beam_translations_n_best_{model.model_name}",
+                                 post_processed_sentences)
+    else:
+        save_data(f"eval/translations/beam_translations_{model.model_name}", post_processed_sentences)
+
+    return post_processed_sentences
 
 
 def get_bleu_of_checkpoints(checkpoint_path: str,
@@ -34,9 +83,6 @@ def get_bleu_of_checkpoints(checkpoint_path: str,
                                        use_torch_bleu=True)
 
         bleu_scores.append(bleu_score)
-        print(model_path, bleu_score)
-
-    print(bleu_scores)
 
     if save_path is not None:
         file = open(save_path, "w")
@@ -50,6 +96,7 @@ def get_bleu_of_checkpoints(checkpoint_path: str,
 def _parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('-mp', '--model_path', type=str)
     parser.add_argument('-cp', '--checkpoint_path', type=str)
     parser.add_argument('-sdp', '--source_data_path', type=str)
     parser.add_argument('-rdp', '--reference_data_path', type=str)
@@ -69,10 +116,21 @@ if __name__ == "__main__":
     source_dict = Dictionary.load(args.source_dict_path)
     reference_dict = Dictionary.load(args.reference_dict_path)
 
-    get_bleu_of_checkpoints(args.checkpoint_path,
-                            source_data,
-                            reference_data,
-                            source_dict,
-                            reference_dict,
-                            args.beam_size,
-                            args.save_path)
+    if args.model_path:
+        translations = translate(args.model_path,
+                                 source_data,
+                                 source_dict,
+                                 reference_dict,
+                                 beam_size=args.beam_size,
+                                 get_n_best=False)
+
+        print(torch_bleu(translations, [[ref] for ref in reference_data]))
+
+    elif args.checkpoint_path:
+        get_bleu_of_checkpoints(args.checkpoint_path,
+                                source_data,
+                                reference_data,
+                                source_dict,
+                                reference_dict,
+                                args.beam_size,
+                                args.save_path)
