@@ -121,12 +121,9 @@ def train_epoch(model, train_dataloader, validation_dataloader,
                                                         label)
             print(f"steps: {steps}, epoch: {epoch_num}")
             print(f"batch metrics: accuracy: {accuracy}, perplexity: {perplexity}, loss: {loss.item()}\n")
-            #print(torch.argmax(predictions, dim=1)[1])
-            #print(label[1])
         if train_params.test_model_every != 0 and steps % train_params.test_model_every == 0:
             val_ppl, val_acc = test_on_validation_data(model, validation_dataloader, train_params)
 
-            #TODO use bleu
             if train_params.early_stopping and 0 < previous_val_ppl <= val_ppl:
                 print("EARLY STOPPING")
                 return

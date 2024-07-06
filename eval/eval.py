@@ -2,10 +2,7 @@ import argparse
 import glob
 from utils.file_manipulation import *
 from metrics.calculate_bleu_of_model import get_bleu_of_model
-from search import beam_search
-from scoring import score
 from preprocessing.dictionary import Dictionary
-from model.basic_net import BasicNet
 from model.seq2seq.recurrent_net import RecurrentNet
 from model.ff.feedforward_net import FeedforwardNet
 from postprocessing.postprocessing import undo_prepocessing
@@ -35,7 +32,6 @@ def translate(model_path: str,
                                         source_dict,
                                         target_dict,
                                         beam_size,
-                                        window_size=model.window_size,
                                         get_n_best=get_n_best)
     else:
         raise ValueError("unsupported model type")

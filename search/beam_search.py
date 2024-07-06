@@ -34,7 +34,6 @@ def translate(model: nn.Module,
                             source_dict,
                             target_dict,
                             beam_size,
-                            window_size,
                             get_n_best,
                             alignment_factor)
 

@@ -32,8 +32,7 @@ def get_bleu_of_model(model: nn.Module,
                                                     source_data,
                                                     source_dict,
                                                     target_dict,
-                                                    beam_size,
-                                                    model.window_size)
+                                                    beam_size)
         else:
             translations = greedy_search.translate_ff(model,
                                                       source_data,
