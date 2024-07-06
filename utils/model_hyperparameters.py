@@ -31,3 +31,4 @@ class RNNModelHyperparameters(ModelHyperparameters):
         self.rnn_hidden_dim = config["rnn_hidden_dim"]
         self.use_attention = config["use_attention"]
         self.use_attention_dp = config["use_attention_dp"]
+        self.use_attention_mask = config["use_attention_mask"]

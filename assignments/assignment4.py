@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from search.beam_search import translate_rnn, translate_ff
 from model.seq2seq.recurrent_net import RecurrentNet
-from search.greedy_search import translate_ff as greedy_translate_ff
 from typing import List
 from preprocessing.dictionary import Dictionary
 from utils.file_manipulation import save_data, save_n_best_translations
