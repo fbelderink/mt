@@ -45,8 +45,7 @@ class RecurrentNet(BasicNet):
                                         hidden_ll=config.hidden_ll,
                                         num_ll=config.num_ll,
                                         dropout_ll=config.dropout_ll,
-                                        batch_norm_ll=config.batch_norm_ll,
-                                        activation_function_ll=config.activation_function_ll)
+                                        batch_norm_ll=config.batch_norm_ll)
 
         self.criterion = nn.CrossEntropyLoss(ignore_index=PADDING)
 

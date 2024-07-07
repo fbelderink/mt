@@ -23,8 +23,7 @@ class AttentionDecoder(nn.Module):
                  hidden_ll=100,
                  num_ll=0,
                  dropout_ll=0.0,
-                 batch_norm_ll=True,
-                 activation_function_ll="relu"):
+                 batch_norm_ll=True):
         super(AttentionDecoder, self).__init__()
 
         self.embedding = nn.Embedding(target_dict_size,
@@ -77,13 +76,15 @@ class AttentionDecoder(nn.Module):
                 if batch_norm_ll:
                     self.fc_arr.append(nn.BatchNorm1d(hidden_ll))
 
-                self.fc_arr.append(getattr(torch.nn.functional, activation_function_ll))
+                self.fc_arr.append(nn.ReLU())
 
                 if dropout_ll != 0:
                     self.fc_arr.append(nn.Dropout(dropout_ll))
 
             # bring dimension to target_dict_size
             self.fc_arr.append(nn.Linear(hidden_ll, target_dict_size))
+
+        self.fc = nn.Sequential(*self.fc_arr)
 
     # add the encoder state of each direction together in order to fit them into the
     # uni-directional decoder
@@ -150,10 +151,9 @@ class AttentionDecoder(nn.Module):
         # concat shape (B x 1 x (decoder_hidden + encoder_hidden))
 
         # reshape to (B x feature) to conform to batch norm layer requirements
-        fc_out = concat.squeeze(1)
+        concat = concat.squeeze(1)
 
-        for layer in self.fc_arr:
-            fc_out = layer(fc_out)
+        fc_out = self.fc(concat)
 
         # reshape to (B x 1 x (decoder_hidden + encoder_hidden)) again to conform to rest of code
         fc_out = fc_out.unsqueeze(1)

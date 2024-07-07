@@ -33,8 +33,8 @@ class Attention(nn.Module):
                 context = F.scaled_dot_product_attention(decoder_outputs,
                                                          encoder_outputs,
                                                          encoder_outputs,
-                                                         attn_mask=attn_mask,
-                                                         dropout_p=self.attn_dropout)
+                                                         attn_mask=attn_mask)
+                                                         #dropout_p=self.attn_dropout)
             else:
                 context = F.scaled_dot_product_attention(decoder_outputs,
                                                          encoder_outputs,

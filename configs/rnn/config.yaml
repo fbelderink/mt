@@ -16,4 +16,3 @@ ll_hidden_dim: 300
 num_ll: 3
 dropout_ll: 0.05
 batch_norm_ll: True
-activation_function_ll: "relu"
