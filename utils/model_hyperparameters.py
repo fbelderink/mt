@@ -37,4 +37,3 @@ class RNNModelHyperparameters(ModelHyperparameters):
         self.num_ll = config["num_ll"]
         self.dropout_ll = config["dropout_ll"]
         self.batch_norm_ll = config["batch_norm_ll"]
-        self.activation_function_ll = config["activation_function_ll"]
