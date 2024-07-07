@@ -64,7 +64,7 @@ class AttentionDecoder(nn.Module):
         # self.fc_arr contains all linear layers, batch norm layers, activation function and dropout layers
         self.fc_arr = []
 
-        for i in range(num_ll + 1):
+        for i in range(num_ll):
             if i == 0:
                 # bring dimension to hidden_ll size
                 self.fc_arr.append(nn.Linear(2 * self.num_directions * hidden, hidden_ll))
@@ -74,12 +74,26 @@ class AttentionDecoder(nn.Module):
             if batch_norm_ll:
                 self.fc_arr.append(nn.BatchNorm1d(hidden_ll))
 
-            if i != num_ll:
-                # do not add relu to last hidden
-                self.fc_arr.append(nn.ReLU())
+            self.fc_arr.append(nn.ReLU())
 
             if dropout_ll != 0:
                 self.fc_arr.append(nn.Dropout(dropout_ll))
+
+            # bring dimension to target_dict_size
+            if num_ll == 0:
+                self.fc_arr.append(nn.Linear(2 * self.num_directions * hidden, target_dict_size))
+                if batch_norm_ll:
+                    self.fc_arr.append(nn.BatchNorm1d(hidden_ll))
+
+                if dropout_ll != 0:
+                    self.fc_arr.append(nn.Dropout(dropout_ll))
+            else:
+                self.fc_arr.append(nn.Linear(hidden_ll, target_dict_size))
+                if batch_norm_ll:
+                    self.fc_arr.append(nn.BatchNorm1d(hidden_ll))
+
+                if dropout_ll != 0:
+                    self.fc_arr.append(nn.Dropout(dropout_ll))
 
         self.fc = nn.Sequential(*self.fc_arr)
 
