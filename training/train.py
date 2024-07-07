@@ -45,8 +45,12 @@ def train(train_path: str, validation_path: str,
                              model_name).to(device)
 
         if train_params.two_optimizers:
-            encoder_optimizer = train_params.optimizer(model.get_encoder().parameters(), lr=train_params.learning_rate)
-            decoder_optimizer = train_params.optimizer(model.get_decoder().parameters(), lr=train_params.learning_rate)
+            encoder_optimizer = train_params.optimizer(model.get_encoder().parameters(),
+                                                       lr=train_params.learning_rate,
+                                                       weight_decay=train_params.weight_decay)
+            decoder_optimizer = train_params.optimizer(model.get_decoder().parameters(),
+                                                       lr=train_params.learning_rate,
+                                                       weight_decay=train_params.weight_decay)
 
             optimizers = [encoder_optimizer, decoder_optimizer]
     elif isinstance(model_params, FFModelHyperparameters) and isinstance(train_params, FFTrainHyperparameters):
@@ -62,7 +66,9 @@ def train(train_path: str, validation_path: str,
         model = torch.load(train_params.saved_model)
 
     if not optimizers:
-        optimizers = [train_params.optimizer(model.parameters(), lr=train_params.learning_rate)]
+        optimizers = [train_params.optimizer(model.parameters(),
+                                             lr=train_params.learning_rate,
+                                             weight_decay=train_params.weight_decay)]
 
     print(f"training on {device}")
     print("Number of Batches: " + str(len(train_dataloader)))

@@ -74,7 +74,9 @@ class AttentionDecoder(nn.Module):
             if batch_norm_ll:
                 self.fc_arr.append(nn.BatchNorm1d(hidden_ll))
 
-            self.fc_arr.append(nn.ReLU())
+            if i != num_ll:
+                # do not add relu to last hidden
+                self.fc_arr.append(nn.ReLU())
 
             if dropout_ll != 0:
                 self.fc_arr.append(nn.Dropout(dropout_ll))

@@ -18,6 +18,7 @@ class TrainHyperparameters:
         self.max_epochs = config["max_epochs"]
         self.print_eval_every = config["print_eval_every"]
         self.test_model_every = config["test_model_every"]
+        self.weight_decay = config["weight_decay"]
 
 
 class RNNTrainHyperparameters(TrainHyperparameters):
