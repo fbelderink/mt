@@ -79,11 +79,11 @@ class AttentionDecoder(nn.Module):
             if dropout_ll != 0:
                 self.fc_arr.append(nn.Dropout(dropout_ll))
 
-            # bring dimension to target_dict_size
-            if num_ll == 0:
-                self.fc_arr.append(nn.Linear(2 * self.num_directions * hidden, target_dict_size))
-            else:
-                self.fc_arr.append(nn.Linear(hidden_ll, target_dict_size))
+        # bring dimension to target_dict_size
+        if num_ll == 0:
+            self.fc_arr.append(nn.Linear(2 * self.num_directions * hidden, target_dict_size))
+        else:
+            self.fc_arr.append(nn.Linear(hidden_ll, target_dict_size))
 
         self.fc = nn.Sequential(*self.fc_arr)
 
