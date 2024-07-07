@@ -16,7 +16,6 @@ def get_bleu_of_model(model: nn.Module,
                       source_dict: Dictionary,
                       target_dict: Dictionary,
                       beam_size: int,
-                      window_size: int,
                       do_beam_search: bool,
                       translations: List[List[str]] = None,
                       use_torch_bleu=False):
@@ -33,14 +32,13 @@ def get_bleu_of_model(model: nn.Module,
                                                     source_data,
                                                     source_dict,
                                                     target_dict,
-                                                    beam_size,
-                                                    window_size)
+                                                    beam_size)
         else:
             translations = greedy_search.translate_ff(model,
                                                       source_data,
                                                       source_dict,
                                                       target_dict,
-                                                      window_size)
+                                                      model.window_size)
     elif isinstance(model, RecurrentNet):
         if do_beam_search:
             translations = beam_search.translate_rnn(model, source_data, source_dict, target_dict, beam_size)

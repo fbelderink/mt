@@ -3,9 +3,10 @@ import numpy as np
 import torch.nn as nn
 from model.seq2seq.recurrent_net import RecurrentNet
 from model.ff.feedforward_net import FeedforwardNet
-from preprocessing.dictionary import Dictionary, START_SYMBOL, END_SYMBOL, PADDING_SYMBOL
+from preprocessing.dictionary import Dictionary, START_SYMBOL, END_SYMBOL, PADDING_SYMBOL, END
 from preprocessing.batching.fragment import create_source_window_matrix
 from typing import List
+from tqdm import tqdm
 
 
 def translate(model: nn.Module,
@@ -13,10 +14,9 @@ def translate(model: nn.Module,
               source_dict: Dictionary,
               target_dict: Dictionary,
               beam_size: int,
-              window_size: int=3,
+              window_size: int = 3,
               get_n_best=False,
               alignment_factor=1):
-
     if isinstance(model, RecurrentNet):
         assert beam_size is not None, "Beam size must be specified for beam search"
         return translate_rnn(model,
@@ -34,7 +34,6 @@ def translate(model: nn.Module,
                             source_dict,
                             target_dict,
                             beam_size,
-                            window_size,
                             get_n_best,
                             alignment_factor)
 
@@ -51,6 +50,9 @@ def translate_rnn(model: RecurrentNet,
     model = model.to(device)
     model.eval()
 
+    encoder = model.get_encoder()
+    decoder = model.get_decoder()
+
     # vectorization of dictionary functions
     get_source_index = np.vectorize(source_dict.get_index_of_string)
     get_target_index = np.vectorize(target_dict.get_index_of_string)
@@ -63,7 +65,7 @@ def translate_rnn(model: RecurrentNet,
     # search for longest sentence
     T_max = len(max(source_data, key=lambda s: len(s)))
 
-    # padd each sentence to the length of the longest sentence, because we do that in training for parallel batch processing
+    # pad each sentence to the length of the longest sentence, because we do that in training for parallel batch processing
     source_data = [sentence +
                    [END_SYMBOL] +
                    [PADDING_SYMBOL] * (T_max - len(sentence))
@@ -74,7 +76,8 @@ def translate_rnn(model: RecurrentNet,
 
     target_sentences = []
 
-    for sentence in source_data:
+    print(f"translating validation data with {model.model_name}")
+    for sentence in tqdm(source_data):
         # list to keep track the last token of each beam
         last_beam_tokens = torch.from_numpy(get_target_index([[START_SYMBOL]])).to(device)
 
@@ -84,10 +87,10 @@ def translate_rnn(model: RecurrentNet,
         full_beams = [[target_dict.get_index_of_string(START_SYMBOL)]] * beam_size
 
         # roll out encoder
-        encoder_outputs, state = model.get_encoder().forward(sentence)
+        encoder_outputs, state = encoder.forward(sentence)
 
         # add batch dimensions
-        state = (state[0].reshape((1, 400)).unsqueeze(1), state[1].reshape((1, 400)).unsqueeze(1))
+        state = (decoder.reshape_state(state[0].unsqueeze(1)), decoder.reshape_state(state[1].unsqueeze(1)))
 
         # add batch dimension
         encoder_outputs = encoder_outputs.unsqueeze(0)
@@ -99,86 +102,85 @@ def translate_rnn(model: RecurrentNet,
         finished_beams_indices = []
         finished_beams_values = []
 
-        for k in range(T_max + 1):
+        for k in range(T_max):
 
             # list to temporarily store the top k choices of each beam
-            # all_top_k_indices = []
-            # all_top_k_values = []
             new_states = []
 
             preds = []
 
-            # TODO eos beachten und in extra liste auslagern, danach topk über anderen top k (also top k ohne eos)
             for beam_idx, target in enumerate(last_beam_tokens):
                 # add batch dimension
                 target = target.unsqueeze(0)
 
                 # do one step on the last token of the beam
-                pred, state = model.get_decoder().forward_step(encoder_outputs,
-                                                               states[beam_idx],
-                                                               target)
+                pred, state = decoder.forward_step(encoder_outputs,
+                                                   states[beam_idx],
+                                                   target)
+
                 new_states.append(state)
 
                 # add previous top k values along beam size dim
                 pred += top_k_probs[beam_idx]
 
-                # normalization of the probabilities wrt the length of the sequence
-                pred /= k + 1
-
                 preds.append(pred.squeeze(0).squeeze(0))
-                # get top k predictions
-                # top_k = pred.topk(beam_size, dim=-1)
 
-                # all_top_k_indices.extend(top_k.indices.flatten())
-                # all_top_k_values.extend(top_k.values.flatten())
+            top_k = torch.cat(preds, dim=-1).topk(beam_size, dim=-1)
 
-            # new_topk = torch.stack(all_top_k_values).topk(beam_size, dim=-1)
-            top_k = torch.stack(preds).topk(beam_size, dim=-1)
+            new_indices = top_k.indices.tolist()
+            indices_of_end = [i for i, v in enumerate(new_indices) if v % target_dict_size == END]
 
-            new_indices = top_k.indices.tolist()[0]  # always a single element list, basically flattening, otherwise [[...]]
+            if indices_of_end:  # checking if eos is in top k
+                beam_indices = [i // target_dict_size for i in new_indices if i % target_dict_size == END]
 
-            if True in [i % target_dict_size == 0 for i in new_indices]:  # checking if eos is in top k
-                beam_indices = [i // target_dict_size for i in new_indices if i % target_dict_size == 0]
-
-                beam_dict = {i: v for (i, v) in zip(beam_indices, top_k.values)}
-
-                for idx in beam_indices:
-                    finished_beams_indices.append(full_beams[idx] + [2])  # add eos
-                    finished_beams_values.append(top_k_probs[idx] + top_k.values[beam_dict[idx * target_dict_size]].item())
+                for i, beam_idx in enumerate(beam_indices):
+                    finished_beams_indices.append(full_beams[beam_idx] + [END])  # add eos
+                    finished_beams_values.append(top_k.values[indices_of_end[i]].item())
 
                 # calculate the new beams that are not finished
                 for pred in preds:
-                    pred[0][target_dict.get_index_of_string(END_SYMBOL)] = -float('inf')  # set probability of eos to -inf
+                    pred[END] = -float('inf')  # set probability of eos to -inf
 
                 # calculate the top k without eos
-                top_k = torch.stack(preds).topk(beam_size, dim=-1)
+                top_k = torch.cat(preds, dim=-1).topk(beam_size, dim=-1)
 
                 new_indices = top_k.indices.tolist()
 
             # saving the top k values in a list
-            top_k_probs = top_k.values.tolist()[0]  # same mechanism as with 'new_indices' above
+            top_k_probs = top_k.values.tolist()  # same mechanism as with 'new_indices' above
 
             # find the corresponding beams
             beam_indices = [idx // target_dict_size for idx in new_indices]
 
             # append the predicted tokens to the beams
             full_beams = [full_beams[beam_index] + [idx % target_dict_size]
-                             for (beam_index, idx) in zip(beam_indices, new_indices)]
+                          for (beam_index, idx) in zip(beam_indices, new_indices)]
 
-            last_beam_tokens = torch.from_numpy(np.array([indices[-1] for indices in full_beams])).to(device).unsqueeze(1)
+            last_beam_tokens = torch.from_numpy(np.array([indices[-1] for indices in full_beams])).to(device).unsqueeze(
+                1)
+
             if k == 0:
                 states = new_states * beam_size
             else:
                 states = [new_states[i] for i in beam_indices]
 
-            # get target translation (first entries are sos)
-        if not get_n_best:
-            target_sentence = get_target_string(full_beams[np.argmax(top_k_probs)][1:]).tolist()
-            target_sentences.append(target_sentence)
-        else:
+        # append last predictions of model to prevent no prediction if no EOS was predicted before
+        for beam_idx in range(beam_size):
+            finished_beams_indices.append(full_beams[beam_idx] + [END])
+            finished_beams_values.append(top_k_probs[beam_idx])
+
+        if get_n_best:
+            # TODO
             target_sentences = get_target_string([indices[1:] for indices in full_beams]).tolist()  # remove sos
 
             target_sentences.append(target_sentences)
+        else:
+            # normalization of the probabilities wrt the length of the sequence
+            for i, v in enumerate(finished_beams_values):
+                finished_beams_values[i] = v / len(finished_beams_indices[i])
+
+            target_sentence = get_target_string(finished_beams_indices[np.argmax(finished_beams_values)]).tolist()
+            target_sentences.append(target_sentence)
 
     return target_sentences
 
@@ -188,7 +190,6 @@ def translate_ff(model: FeedforwardNet,
                  source_dict: Dictionary,
                  target_dict: Dictionary,
                  beam_size: int,
-                 window_size: int,
                  get_n_best=False,
                  alignment_factor=1):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -204,14 +205,14 @@ def translate_ff(model: FeedforwardNet,
     target_sentences = []
 
     for sentence in source_data:
-        S = create_source_window_matrix(sentence, source_dict, window_size, len(sentence) * alignment_factor + 1)
+        S = create_source_window_matrix(sentence, source_dict, model.window_size, len(sentence) * alignment_factor + 1)
 
         S = torch.from_numpy(S).to(device)
 
-        beam_targets = torch.from_numpy(get_target_idx([[START_SYMBOL] * window_size])).to(device)
+        beam_targets = torch.from_numpy(get_target_idx([[START_SYMBOL] * model.window_size])).to(device)
 
         top_k_values = [0]
-        top_k_indices = [[target_dict.get_index_of_string(START_SYMBOL)] * window_size] * beam_size
+        top_k_indices = [[target_dict.get_index_of_string(START_SYMBOL)] * model.window_size] * beam_size
 
         for s in S:
             # expand to make first dimension fit beam_size
@@ -248,7 +249,7 @@ def translate_ff(model: FeedforwardNet,
                 new_top_k_indices.append(top_k_indices[previous_indices[i]] + [current_indices[i]])
 
                 # replace indices in input for net
-                beam_targets[i] = torch.tensor(new_top_k_indices[i][-window_size:]).to(device)
+                beam_targets[i] = torch.tensor(new_top_k_indices[i][-model.window_size:]).to(device)
 
             # record current best values
             top_k_values = top_k.values.squeeze(0).tolist()
@@ -257,8 +258,8 @@ def translate_ff(model: FeedforwardNet,
 
         # get target translation (first window_size entries are sos)
         if not get_n_best:
-            target_sentences.append(get_target_string(top_k_indices[np.argmax(top_k_values)][window_size:]).tolist())
+            target_sentences.append(get_target_string(top_k_indices[np.argmax(top_k_values)][model.window_size:]).tolist())
         else:
-            target_sentences.append(get_target_string([indices[window_size:] for indices in top_k_indices]).tolist())
+            target_sentences.append(get_target_string([indices[model.window_size:] for indices in top_k_indices]).tolist())
 
     return target_sentences

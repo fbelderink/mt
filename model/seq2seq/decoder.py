@@ -1,4 +1,5 @@
-import torchimport random
+import torch
+import random
 import torch.nn as nn
 import torch.nn.functional as F
 from model.layers.attention import Attention
@@ -16,6 +17,7 @@ class AttentionDecoder(nn.Module):
                  dropout,
                  use_attention=True,
                  use_attention_dp=True,
+                 use_attention_mask=True,
                  bidirectional_encoder=False):
         super(AttentionDecoder, self).__init__()
 
@@ -49,7 +51,8 @@ class AttentionDecoder(nn.Module):
         if self.use_attention:
             self.attention = Attention(self.num_directions * hidden,
                                        self.num_directions * hidden,
-                                       use_dot_product=use_attention_dp)
+                                       use_dot_product=use_attention_dp,
+                                       use_mask=use_attention_mask)
             # attention output shape (B x 1 x encoder_hidden)
 
         self.fc = nn.Linear(2 * self.num_directions * hidden, target_dict_size)
@@ -62,8 +65,13 @@ class AttentionDecoder(nn.Module):
 
         return reshaped
 
-    def forward(self, encoder_outputs, encoder_state, target_tensor,
-                teacher_forcing_ratio=0, apply_log_softmax=True):
+    def forward(self,
+                encoder_outputs,
+                encoder_state,
+                target_tensor,
+                teacher_forcing_ratio=0,
+                apply_log_softmax=True,
+                attn_mask=None):
         # encoder_outputs expected shape: (B x seq_len x hidden)
         # encoder_state expected shapes: ([directions * layers x B x hidden], [directions * layers x B x hidden])
 
@@ -77,7 +85,8 @@ class AttentionDecoder(nn.Module):
             fc_out, prev_decoder_state = self.forward_step(encoder_outputs,
                                                            prev_decoder_state,
                                                            target_word,
-                                                           apply_log_softmax)
+                                                           apply_log_softmax=apply_log_softmax,
+                                                           attn_mask=attn_mask)
             # fc_out shape (B x 1 x target_dict_size)
 
             if random.random() < teacher_forcing_ratio:
@@ -92,7 +101,8 @@ class AttentionDecoder(nn.Module):
                      encoder_outputs,
                      prev_state,
                      target_word,
-                     apply_log_softmax=True):
+                     apply_log_softmax=True,
+                     attn_mask=None):
         # encoder_outputs shape: (B x seq_len x hidden * directions)
         # hidden_state shape: (directions * num_layers x B x hidden)
         # target word shape: (B x 1)
@@ -103,7 +113,7 @@ class AttentionDecoder(nn.Module):
         # decoder_outputs shape (B x 1 x hidden * num_directions)
 
         if self.use_attention:
-            context_vector = self.attention(encoder_outputs, decoder_outputs)
+            context_vector = self.attention(encoder_outputs, decoder_outputs, attn_mask=attn_mask)
             # context_vector shape (B x 1 x encoder_hidden)
         else:
             context_vector = encoder_outputs[:, -1, :].unsqueeze(1) #TODO sinnfrei (müssen 1:1 alignment sonst machen eigentlich)

@@ -40,13 +40,21 @@ class RecurrentNet(BasicNet):
                                         config.decoder_parameters[1],
                                         config.use_attention,
                                         use_attention_dp=config.use_attention_dp,
+                                        use_attention_mask=config.use_attention_mask,
                                         bidirectional_encoder=config.encoder_parameters[1])
 
         self.criterion = nn.CrossEntropyLoss(ignore_index=PADDING)
 
     def forward(self, source, target,
-                teacher_forcing_ratio=0, apply_log_softmax=True):
+                teacher_forcing_ratio=0,
+                apply_log_softmax=True):
+        # source shape: (B x seq_len)
+        # target shape: (B x 1)
+
         encoder_outputs, encoder_state = self.encoder(source)
+
+        attn_mask = source != PADDING
+        attn_mask = attn_mask.unsqueeze(1)
 
         # encoder_outputs shape: [B x seq_len x directions*hidden]
         # encoder_state shapes: [directions*layers x B x hidden]
@@ -55,7 +63,8 @@ class RecurrentNet(BasicNet):
 
         decoder_outputs = self.decoder(encoder_outputs, encoder_state, target,
                                        teacher_forcing_ratio=teacher_forcing_ratio,
-                                       apply_log_softmax=apply_log_softmax)
+                                       apply_log_softmax=apply_log_softmax,
+                                       attn_mask=attn_mask)
 
         decoder_outputs = decoder_outputs.permute(0, 2, 1)
 
