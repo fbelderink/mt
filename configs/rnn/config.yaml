@@ -13,6 +13,6 @@ use_attention_dp: True
 use_attention_mask: True
 attention_dropout: 0.05
 ll_hidden_dim: 300
-num_ll: 3
+num_ll: 1
 dropout_ll: 0.05
 batch_norm_ll: True
