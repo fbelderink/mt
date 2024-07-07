@@ -8,7 +8,7 @@ class Attention(nn.Module):
     Attention layer, implemented as proposed in Bahdanau & Cho
     """
 
-    def __init__(self, encoder_hidden, decoder_hidden, use_dot_product=False, use_mask=False):
+    def __init__(self, encoder_hidden, decoder_hidden, use_dot_product=False, use_mask=False, attn_dropout=0.0):
         super(Attention, self).__init__()
         self.use_dot_product = use_dot_product
         self.use_mask = use_mask
@@ -18,6 +18,8 @@ class Attention(nn.Module):
         self.activation = nn.Tanh()
 
         self.Va = nn.Linear(encoder_hidden, 1)
+
+        self.attn_dropout = attn_dropout
 
     def forward(self, encoder_outputs, decoder_outputs, attn_mask=None):
         # encoder_outputs expected shape: (B x seq_len x hidden)
@@ -31,11 +33,13 @@ class Attention(nn.Module):
                 context = F.scaled_dot_product_attention(decoder_outputs,
                                                          encoder_outputs,
                                                          encoder_outputs,
-                                                         attn_mask=attn_mask)
+                                                         attn_mask=attn_mask,
+                                                         dropout_p=self.attn_dropout)
             else:
                 context = F.scaled_dot_product_attention(decoder_outputs,
                                                          encoder_outputs,
-                                                         encoder_outputs)
+                                                         encoder_outputs,
+                                                         dropout_p=self.attn_dropout)
 
             return context
         else:
@@ -53,6 +57,7 @@ class Attention(nn.Module):
 
             weights = F.softmax(scores, dim=-1)
             # expected shape (B x 1 x seq_len)
+            # TODO dropout here
 
             context = torch.bmm(weights, encoder_outputs)  # (B x 1 x encoder_hidden)
 

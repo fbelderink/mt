@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from model.layers.attention import Attention
 from utils.types import RNNType
-from preprocessing.dictionary import START, PADDING
+from preprocessing.dictionary import PADDING
 
 
 class AttentionDecoder(nn.Module):
@@ -18,12 +18,13 @@ class AttentionDecoder(nn.Module):
                  use_attention=True,
                  use_attention_dp=True,
                  use_attention_mask=True,
+                 attn_dropout=0.0,
                  bidirectional_encoder=False,
-                 hidden_ll = 100,
-                 num_ll = 0,
-                 dropout_ll = 0.0,
-                 batch_norm_ll = True,
-                 activation_function_ll = "relu"):
+                 hidden_ll=100,
+                 num_ll=0,
+                 dropout_ll=0.0,
+                 batch_norm_ll=True,
+                 activation_function_ll="relu"):
         super(AttentionDecoder, self).__init__()
 
         self.embedding = nn.Embedding(target_dict_size,
@@ -57,16 +58,16 @@ class AttentionDecoder(nn.Module):
             self.attention = Attention(self.num_directions * hidden,
                                        self.num_directions * hidden,
                                        use_dot_product=use_attention_dp,
-                                       use_mask=use_attention_mask)
+                                       use_mask=use_attention_mask,
+                                       attn_dropout=attn_dropout)
             # attention output shape (B x 1 x encoder_hidden)
-        
 
-        # self.fc_arr contains all linear layers, batch norm layers, activation function and dropout layers 
+        # self.fc_arr contains all linear layers, batch norm layers, activation function and dropout layers
         self.fc_arr = []
         if num_ll == 0:
             self.fc_arr.append(nn.Linear(2 * self.num_directions * hidden, target_dict_size))
         else:
-            for i in range(num_ll-1):
+            for i in range(num_ll - 1):
                 if i == 0:
                     # bring dimension to hidden_ll size
                     self.fc_arr.append(nn.Linear(2 * self.num_directions * hidden, hidden_ll))
@@ -80,13 +81,9 @@ class AttentionDecoder(nn.Module):
 
                 if dropout_ll != 0:
                     self.fc_arr.append(nn.Dropout(dropout_ll))
-            
+
             # bring dimension to target_dict_size
             self.fc_arr.append(nn.Linear(hidden_ll, target_dict_size))
-
-            
-
-
 
     # add the encoder state of each direction together in order to fit them into the
     # uni-directional decoder
@@ -147,11 +144,10 @@ class AttentionDecoder(nn.Module):
             context_vector = self.attention(encoder_outputs, decoder_outputs, attn_mask=attn_mask)
             # context_vector shape (B x 1 x encoder_hidden)
         else:
-            context_vector = encoder_outputs[:, -1, :].unsqueeze(1) #TODO sinnfrei (müssen 1:1 alignment sonst machen eigentlich)
+            context_vector = encoder_outputs[:, -1, :].unsqueeze(1)  #TODO sinnfrei (müssen 1:1 alignment sonst machen eigentlich)
 
         concat = torch.cat((decoder_outputs, context_vector), dim=-1)
         # concat shape (B x 1 x (decoder_hidden + encoder_hidden))
-
 
         # reshape to (B x feature) to conform to batch norm layer requirements
         fc_out = concat.squeeze(1)
