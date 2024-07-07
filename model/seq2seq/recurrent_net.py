@@ -1,5 +1,4 @@
 import torch.nn as nn
-import torch
 
 from model.basic_net import BasicNet
 from model.seq2seq.encoder import Encoder
@@ -41,7 +40,13 @@ class RecurrentNet(BasicNet):
                                         config.use_attention,
                                         use_attention_dp=config.use_attention_dp,
                                         use_attention_mask=config.use_attention_mask,
-                                        bidirectional_encoder=config.encoder_parameters[1])
+                                        attn_dropout=config.attention_dropout,
+                                        bidirectional_encoder=config.encoder_parameters[1],
+                                        hidden_ll=config.hidden_ll,
+                                        num_ll=config.num_ll,
+                                        dropout_ll=config.dropout_ll,
+                                        batch_norm_ll=config.batch_norm_ll,
+                                        activation_function_ll=config.activation_function_ll)
 
         self.criterion = nn.CrossEntropyLoss(ignore_index=PADDING)
 

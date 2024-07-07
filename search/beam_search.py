@@ -3,7 +3,7 @@ import numpy as np
 import torch.nn as nn
 from model.seq2seq.recurrent_net import RecurrentNet
 from model.ff.feedforward_net import FeedforwardNet
-from preprocessing.dictionary import Dictionary, START_SYMBOL, END_SYMBOL, PADDING_SYMBOL, END
+from preprocessing.dictionary import Dictionary, START_SYMBOL, END_SYMBOL, PADDING_SYMBOL, END, PADDING
 from preprocessing.batching.fragment import create_source_window_matrix
 from typing import List
 from tqdm import tqdm
@@ -86,6 +86,8 @@ def translate_rnn(model: RecurrentNet,
         #
         full_beams = [[target_dict.get_index_of_string(START_SYMBOL)]] * beam_size
 
+        attn_mask = sentence != PADDING
+
         # roll out encoder
         encoder_outputs, state = encoder.forward(sentence)
 
@@ -116,7 +118,8 @@ def translate_rnn(model: RecurrentNet,
                 # do one step on the last token of the beam
                 pred, state = decoder.forward_step(encoder_outputs,
                                                    states[beam_idx],
-                                                   target)
+                                                   target,
+                                                   attn_mask=attn_mask)
 
                 new_states.append(state)
 
