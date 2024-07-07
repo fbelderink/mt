@@ -12,5 +12,6 @@ load_model_path: ""
 early_stopping: False
 half_lr: True
 teacher_forcing_ratio: 1.0
+teacher_forcing_decrease_ratio: 0.1
 two_optimizers: True
 ignore_eos_for_acc: True

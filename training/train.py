@@ -77,6 +77,7 @@ def train(train_path: str, validation_path: str,
     print("\nStarting Training:\n")
 
     total_steps = 0
+    tf_dec = 0
     checkpoint_rate = train_params.checkpoints if train_params.checkpoints > 1 else 1 / train_params.checkpoints
     for epoch in range(1, train_params.max_epochs + 1):
         print(f"Epoch {epoch}/{train_params.max_epochs}")
@@ -85,7 +86,8 @@ def train(train_path: str, validation_path: str,
                                               train_dataloader, validation_dataloader,
                                               optimizers,
                                               train_params, epoch, total_steps,
-                                              checkpoint_rate, train_params.checkpoints > 1)
+                                              checkpoint_rate, train_params.checkpoints > 1,
+                                              tf_dec=tf_dec)
 
         if 0 < train_params.checkpoints <= 1 and epoch % checkpoint_rate == 0:
             save_checkpoint(model, model.model_name)
@@ -95,7 +97,7 @@ def train(train_path: str, validation_path: str,
 
 def train_epoch(model, train_dataloader, validation_dataloader,
                 optimizers, train_params, epoch_num, total_steps,
-                checkpoint_rate=None, do_checkpointing=False):
+                checkpoint_rate=None, do_checkpointing=False, tf_dec=0):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     steps = 0
@@ -111,7 +113,7 @@ def train_epoch(model, train_dataloader, validation_dataloader,
         for optimizer in optimizers:
             optimizer.zero_grad()
 
-        predictions, loss = forward_pass(model, source, target, label, train_params)
+        predictions, loss = forward_pass(model, source, target, label, train_params, tf_dec=tf_dec)
 
         loss.backward()
 
@@ -130,14 +132,17 @@ def train_epoch(model, train_dataloader, validation_dataloader,
         if train_params.test_model_every != 0 and steps % train_params.test_model_every == 0:
             val_ppl, val_acc = test_on_validation_data(model, validation_dataloader, train_params)
 
-            if train_params.early_stopping and 0 < previous_val_ppl <= val_ppl:
-                print("EARLY STOPPING")
-                return
+            if 0 < previous_val_ppl <= val_ppl:
+                tf_dec += train_params.teacher_forcing_decrease_ratio
 
-            if train_params.half_lr and 0 < previous_val_ppl <= val_ppl:
-                half_lr(optimizers)
-                print(
-                    f"HALF LR: previous lr: {2 * optimizers[0].param_groups[0]['lr']}, new lr: {optimizers[0].param_groups[0]['lr']}\n")
+                if train_params.early_stopping:
+                    print("EARLY STOPPING")
+                    return
+
+                if train_params.half_lr:
+                    half_lr(optimizers)
+                    print(
+                        f"HALF LR: previous lr: {2 * optimizers[0].param_groups[0]['lr']}, new lr: {optimizers[0].param_groups[0]['lr']}\n")
 
             previous_val_ppl = val_ppl
 
@@ -177,10 +182,15 @@ def test_on_validation_data(model, validation_dataloader, train_params):
     return validation_perplexity, validation_accuracy
 
 
-def forward_pass(model, source, target, label, train_params):
+def forward_pass(model, source, target, label, train_params, tf_dec=0):
     if isinstance(train_params, RNNTrainHyperparameters):
+        if train_params.teacher_forcing_decrease_ratio:
+            tf_ratio = train_params.teacher_forcing_ratio * (1 - tf_dec)
+        else:
+            tf_ratio = train_params.teacher_forcing_ratio
         predictions = model(source, target,
-                            teacher_forcing_ratio=train_params.teacher_forcing_ratio, apply_log_softmax=False)
+                            teacher_forcing_ratio=tf_ratio,
+                            apply_log_softmax=False)
     elif isinstance(train_params, FFTrainHyperparameters):
         predictions = model(source, target, apply_log_softmax=False)
         predictions = predictions.unsqueeze(-1)

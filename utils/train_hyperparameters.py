@@ -27,6 +27,7 @@ class RNNTrainHyperparameters(TrainHyperparameters):
 
         self.two_optimizers = config["two_optimizers"]
         self.teacher_forcing_ratio = config["teacher_forcing_ratio"]
+        self.teacher_forcing_decrease_ratio = config["teacher_forcing_decrease_ratio"]
         self.ignore_eos_for_acc = config["ignore_eos_for_acc"]
 
 
